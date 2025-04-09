@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import SearchBar from './SearchBar';
 import heroImage1 from '../assets/hero-bg3.jpg';
 import heroImage2 from '../assets/hero-bg2.jpg';
 import heroImage3 from '../assets/hero-bg.jpg';
@@ -24,7 +23,7 @@ const HeroSection = () => {
     <section className="relative mt-[80px] sm:mt-[80px] flex justify-center items-center px-4 sm:px-6">
       <div className="w-full md:w-[95%] rounded-2xl sm:rounded-3xl overflow-hidden relative shadow-lg">
         {/* Carousel Container */}
-        <div className="relative h-[500px] sm:h-[550px] md:h-[600px]">
+        <div className="relative h-[400px] sm:h-[450px] md:h-[500px]">
           {images.map((image, index) => (
             <div
               key={index}
@@ -51,9 +50,9 @@ const HeroSection = () => {
             <p className="text-sm sm:text-base md:text-xl font-light text-gray-200 drop-shadow max-w-lg mx-auto">
               Find and book events that match your vibe — all in one place
             </p>
-            <div className="w-full mt-6 sm:mt-8">
-              <SearchBar />
-            </div>
+            <button className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-full font-medium text-base sm:text-lg transition-colors duration-200 shadow-lg">
+              See Events
+            </button>
           </div>
         </div>
       </div>

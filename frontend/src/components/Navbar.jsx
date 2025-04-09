@@ -57,17 +57,24 @@ const Navbar = () => {
 
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 bg-white z-40 md:hidden pt-16">
-          <div className="p-4 space-y-4">
-            <ul className="space-y-4">
-              <li className="text-gray-600 hover:text-blue-500 transition cursor-pointer">Home</li>
-              <li className="text-gray-600 hover:text-blue-500 transition cursor-pointer">Events</li>
-              <li className="text-gray-600 hover:text-blue-500 transition cursor-pointer">Explore</li>
-              <li className="text-gray-600 hover:text-blue-500 transition cursor-pointer">About</li>
-            </ul>
-      
+        <>
+          {/* Semi-transparent backdrop with blur */}
+          <div 
+            className="fixed inset-0 backdrop-blur-sm bg-black/20 z-40 md:hidden"
+            onClick={() => setIsMobileMenuOpen(false)}
+          ></div>
+          {/* Menu Panel */}
+          <div className="fixed top-0 left-0 right-0 h-[50vh] bg-white/80 backdrop-blur-md z-40 md:hidden pt-16 rounded-b-3xl shadow-lg">
+            <div className="h-full p-4 flex items-center justify-center">
+              <ul className="space-y-6 text-center">
+                <li className="text-gray-700 hover:text-blue-500 transition cursor-pointer text-lg">Home</li>
+                <li className="text-gray-700 hover:text-blue-500 transition cursor-pointer text-lg">Events</li>
+                <li className="text-gray-700 hover:text-blue-500 transition cursor-pointer text-lg">Explore</li>
+                <li className="text-gray-700 hover:text-blue-500 transition cursor-pointer text-lg">About</li>
+              </ul>
+            </div>
           </div>
-        </div>
+        </>
       )}
     </>
   );
