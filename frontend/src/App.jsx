@@ -1,7 +1,8 @@
 import React from "react";
 import AppRoutes from "./routes/AppRoutes.jsx";
-import Footer from "./components/Footer.jsx";
 import Navbar from "./components/Navbar.jsx";
+import { FooterWithSocialLinks } from "./components/Footer.jsx";
+
 
 const App = () => {
   return (
@@ -10,7 +11,7 @@ const App = () => {
       <main className="flex-grow">
         <AppRoutes />
       </main>
-      <Footer />
+      <FooterWithSocialLinks />
     </div>
   );
 };
