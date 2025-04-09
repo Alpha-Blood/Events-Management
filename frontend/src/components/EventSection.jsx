@@ -1,0 +1,65 @@
+// src/components/EventsSection.jsx
+import React from 'react';
+import EventCard from './EventCard';
+import concertImage from '../assets/events/concert.jpg';
+import artImage from '../assets/events/art.jpg';
+import techImage from '../assets/events/tech.jpg';
+import image5 from '../assets/events/hero-bg2.jpg';
+
+
+const events = [
+  {
+    id: 1,
+    image: concertImage,
+    title: 'The Big 6 Round Table',
+    date: '2 May',
+    venue: 'The O2',
+    price: 495000,
+  },
+  {
+    id: 2,
+    image: artImage,
+    title: 'AFROBEATS FESTIVAL 2025',
+    date: '15 June',
+    venue: 'Nyayo Stadium',
+    price: 2500,
+  },
+  {
+    id: 3,
+    image: techImage,
+    title: 'AFROBEATS FESTIVAL 2025',
+    date: '15 June',
+    venue: 'Nyayo Stadium',
+    price: 2500,
+  },
+  {
+    id: 4,
+    image: image5,
+    title: 'AFROBEATS FESTIVAL 2025',
+    date: '15 June',
+    venue: 'Nyayo Stadium',
+    price: 2500,
+  },
+
+  // Add more events as needed
+];
+
+const EventSection = () => {
+  return (
+    <section className="bg-gray-50 py-12 px-4 sm:px-8">
+      <div className="max-w-7xl mx-auto">
+        <h2 className="text-3xl sm:text-4xl font-bold text-center text-gray-900 mb-10">
+          Upcoming Events
+        </h2>
+
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-8">
+          {events.map((event) => (
+            <EventCard key={event.id} event={event} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default EventSection;
