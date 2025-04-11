@@ -170,7 +170,7 @@ const Checkout = () => {
               {paymentMethod === PaymentMethods.CARD && (
                 <>
                   <div>
-                    <label htmlFor="cardNumber" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="cardNumber" className="block text-sm font-medium text-gray-700 mb-1">
                       Card Number
                     </label>
                     <input
@@ -179,14 +179,14 @@ const Checkout = () => {
                       name="cardNumber"
                       value={cardData.cardNumber}
                       onChange={handleCardChange}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      className="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                       placeholder="1234 5678 9012 3456"
                       required
                     />
                   </div>
 
                   <div>
-                    <label htmlFor="cardName" className="block text-sm font-medium text-gray-700">
+                    <label htmlFor="cardName" className="block text-sm font-medium text-gray-700 mb-1">
                       Name on Card
                     </label>
                     <input
@@ -195,7 +195,7 @@ const Checkout = () => {
                       name="cardName"
                       value={cardData.cardName}
                       onChange={handleCardChange}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                      className="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                       placeholder="John Doe"
                       required
                     />
@@ -203,7 +203,7 @@ const Checkout = () => {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="expiryDate" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="expiryDate" className="block text-sm font-medium text-gray-700 mb-1">
                         Expiry Date
                       </label>
                       <input
@@ -212,14 +212,14 @@ const Checkout = () => {
                         name="expiryDate"
                         value={cardData.expiryDate}
                         onChange={handleCardChange}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        className="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                         placeholder="MM/YY"
                         required
                       />
                     </div>
 
                     <div>
-                      <label htmlFor="cvv" className="block text-sm font-medium text-gray-700">
+                      <label htmlFor="cvv" className="block text-sm font-medium text-gray-700 mb-1">
                         CVV
                       </label>
                       <input
@@ -228,7 +228,7 @@ const Checkout = () => {
                         name="cvv"
                         value={cardData.cvv}
                         onChange={handleCardChange}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                        className="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                         placeholder="123"
                         required
                       />
@@ -239,7 +239,7 @@ const Checkout = () => {
 
               {paymentMethod === PaymentMethods.MPESA && (
                 <div>
-                  <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
                     M-Pesa Phone Number
                   </label>
                   <input
@@ -248,7 +248,7 @@ const Checkout = () => {
                     name="phoneNumber"
                     value={mpesaData.phoneNumber}
                     onChange={handleMpesaChange}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                     placeholder="254712345678"
                     required
                   />
@@ -260,7 +260,7 @@ const Checkout = () => {
 
               {paymentMethod === PaymentMethods.PAYPAL && (
                 <div>
-                  <label htmlFor="paypalEmail" className="block text-sm font-medium text-gray-700">
+                  <label htmlFor="paypalEmail" className="block text-sm font-medium text-gray-700 mb-1">
                     PayPal Email
                   </label>
                   <input
@@ -269,7 +269,7 @@ const Checkout = () => {
                     name="email"
                     value={paypalData.email}
                     onChange={handlePaypalChange}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                    className="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                     placeholder="your@email.com"
                     required
                   />
@@ -281,7 +281,7 @@ const Checkout = () => {
 
               <button
                 type="submit"
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium"
               >
                 Pay KSH {total.toLocaleString()}
               </button>

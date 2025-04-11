@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import heroImage1 from '../assets/hero-bg3.jpg';
 import heroImage2 from '../assets/hero-bg2.jpg';
 import heroImage3 from '../assets/hero-bg.jpg';
@@ -6,6 +7,7 @@ import heroImage3 from '../assets/hero-bg.jpg';
 const HeroSection = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const images = [heroImage1, heroImage2, heroImage3];
+  const navigate = useNavigate();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -17,6 +19,10 @@ const HeroSection = () => {
 
   const goToSlide = (index) => {
     setCurrentSlide(index);
+  };
+
+  const handleSeeEvents = () => {
+    navigate('/events');
   };
 
   return (
@@ -50,7 +56,10 @@ const HeroSection = () => {
             <p className="text-sm sm:text-base md:text-xl font-light text-gray-200 drop-shadow max-w-lg mx-auto">
               Find and book events that match your vibe — all in one place
             </p>
-            <button className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-full font-medium text-base sm:text-lg transition-colors duration-200 shadow-lg">
+            <button 
+              onClick={handleSeeEvents}
+              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-full font-medium text-base sm:text-lg transition-colors duration-200 shadow-lg"
+            >
               See Events
             </button>
           </div>
