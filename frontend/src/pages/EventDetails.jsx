@@ -168,7 +168,7 @@ const EventDetails = () => {
       </div>
 
       {/* Desktop View */}
-      <div className="hidden lg:block bg-blue-900">
+      <div className="hidden lg:block bg-navy">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
           <div className="flex gap-12">
             {/* Event Details */}
@@ -294,7 +294,7 @@ const EventDetails = () => {
           <p className="mt-4 text-gray-600">Discover more exciting events happening soon</p>
         </div>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-8">
           {allEvents
             .filter(e => e.id !== parseInt(id))
             .map(event => (
