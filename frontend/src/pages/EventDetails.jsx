@@ -4,6 +4,7 @@ import concertImage from '../assets/events/concert.jpg';
 import artImage from '../assets/events/art.jpg';
 import techImage from '../assets/events/tech.jpg';
 import image5 from '../assets/events/hero-bg2.jpg';
+import EventCard from '../components/EventCard';
 
 // This should match the events data from EventSection and Events page
 const allEvents = [
@@ -283,6 +284,40 @@ const EventDetails = () => {
               Get Tickets
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* Other Events Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold text-gray-900">Other Events You Might Like</h2>
+          <p className="mt-4 text-gray-600">Discover more exciting events happening soon</p>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          {allEvents
+            .filter(e => e.id !== parseInt(id))
+            .map(event => (
+              <EventCard
+                key={event.id}
+                id={event.id}
+                image={event.image}
+                title={event.title}
+                date={event.date}
+                venue={event.venue}
+                price={event.tickets[0].price}
+              />
+            ))
+          }
+        </div>
+
+        <div className="mt-12 text-center">
+          <button className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+            Show More
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
         </div>
       </div>
     </div>
