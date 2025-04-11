@@ -6,7 +6,6 @@ import artImage from '../assets/events/art.jpg';
 import techImage from '../assets/events/tech.jpg';
 import image5 from '../assets/events/hero-bg2.jpg';
 
-
 const events = [
   {
     id: 1,
@@ -27,21 +26,19 @@ const events = [
   {
     id: 3,
     image: techImage,
-    title: 'AFROBEATS FESTIVAL 2025',
+    title: 'Tech Conference 2024',
     date: '15 June',
-    venue: 'Nyayo Stadium',
+    venue: 'KICC',
     price: 2500,
   },
   {
     id: 4,
     image: image5,
-    title: 'AFROBEATS FESTIVAL 2025',
-    date: '15 June',
-    venue: 'Nyayo Stadium',
+    title: 'Art Exhibition',
+    date: '20 June',
+    venue: 'National Museum',
     price: 2500,
-  },
-
-  // Add more events as needed
+  }
 ];
 
 const EventSection = () => {
