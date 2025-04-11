@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import concertImage from '../assets/events/concert.jpg';
 import artImage from '../assets/events/art.jpg';
 import techImage from '../assets/events/tech.jpg';
@@ -60,6 +60,7 @@ const allEvents = [
 
 const EventDetails = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [event, setEvent] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [ticketCounts, setTicketCounts] = useState({});
@@ -104,6 +105,30 @@ const EventDetails = () => {
   };
 
   const totalTickets = Object.values(ticketCounts).reduce((a, b) => a + b, 0);
+
+  const handleGetTickets = () => {
+    // Filter out tickets with quantity 0
+    const selectedTickets = event.tickets.filter(ticket => ticketCounts[ticket.id] > 0);
+    
+    if (selectedTickets.length === 0) {
+      alert('Please select at least one ticket');
+      return;
+    }
+
+    // Navigate to checkout with event and selected tickets data
+    navigate('/checkout', {
+      state: {
+        event: {
+          id,
+          title: event.title,
+          date: event.date,
+          venue: event.venue,
+          image: event.image
+        },
+        selectedTickets
+      }
+    });
+  };
 
   if (!event) {
     return (
@@ -277,12 +302,14 @@ const EventDetails = () => {
               </div>
             </div>
 
-            <button 
-              className="mt-6 w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={totalTickets === 0}
-            >
-              Get Tickets
-            </button>
+            <div className="mt-8">
+              <button
+                onClick={handleGetTickets}
+                className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors duration-200"
+              >
+                Get Tickets
+              </button>
+            </div>
           </div>
         </div>
       </div>
