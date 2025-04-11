@@ -1,5 +1,6 @@
 // src/components/EventsSection.jsx
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import EventCard from './EventCard';
 import concertImage from '../assets/events/concert.jpg';
 import artImage from '../assets/events/art.jpg';
@@ -42,6 +43,12 @@ const events = [
 ];
 
 const EventSection = () => {
+  const navigate = useNavigate();
+
+  const handleShowMore = () => {
+    navigate('/events');
+  };
+
   return (
     <section className="bg-gray-50 py-3 px-4 sm:px-8">
       <div className="max-w-7xl mx-auto">
@@ -56,7 +63,10 @@ const EventSection = () => {
         </div>
 
         <div className="flex justify-center mt-8 sm:mt-12">
-          <button className="bg-blue-600 text-white px-6 py-3 rounded-lg text-sm sm:text-base font-medium hover:bg-blue-700 transition flex items-center gap-2">
+          <button 
+            onClick={handleShowMore}
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg text-sm sm:text-base font-medium hover:bg-blue-700 transition flex items-center gap-2"
+          >
             Show More
             <svg 
               xmlns="http://www.w3.org/2000/svg" 

@@ -1,6 +1,5 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import Layout from '../components/Layout';
 import Home from '../pages/Home';
 import Events from '../pages/Events';
 import EventDetails from '../pages/EventDetails';
@@ -16,17 +15,17 @@ import NotFound from '../pages/NotFound';
 const AppRoutes = () => {
   return (
     <Routes>
-      <Route path="/" element={<Layout><Home /></Layout>} />
-      <Route path="/events" element={<Layout><Events /></Layout>} />
-      <Route path="/events/:id" element={<Layout><EventDetails /></Layout>} />
-      <Route path="/checkout" element={<Layout><Checkout /></Layout>} />
+      <Route path="/" element={<Home />} />
+      <Route path="/events" element={<Events />} />
+      <Route path="/events/:id" element={<EventDetails />} />
+      <Route path="/checkout" element={<Checkout />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-      <Route path="/contact" element={<Layout><Contact /></Layout>} />
-      <Route path="/help" element={<Layout><HelpCenter /></Layout>} />
-      <Route path="/terms" element={<Layout><Terms /></Layout>} />
-      <Route path="/privacy" element={<Layout><Privacy /></Layout>} />
-      <Route path="*" element={<Layout><NotFound /></Layout>} />
+      <Route path="/contact" element={<Contact />} />
+      <Route path="/help" element={<HelpCenter />} />
+      <Route path="/terms" element={<Terms />} />
+      <Route path="/privacy" element={<Privacy />} />
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };
