@@ -1,7 +1,7 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 import Navbar from './Navbar';
-import { FooterWithSocialLinks } from './Footer';
+import Footer from './Footer';
 
 const Layout = ({ children }) => {
   const location = useLocation();
@@ -13,7 +13,7 @@ const Layout = ({ children }) => {
       <main className="flex-grow">
         {children}
       </main>
-      {!isAuthPage && <FooterWithSocialLinks />}
+      {!isAuthPage && <Footer />}
     </div>
   );
 };
