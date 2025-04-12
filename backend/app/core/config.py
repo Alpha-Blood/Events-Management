@@ -1,0 +1,48 @@
+from pydantic_settings import BaseSettings
+from typing import List
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+class Settings(BaseSettings):
+    # API Settings
+    API_V1_STR: str = "/api/v1"
+    PROJECT_NAME: str = "Event Booking API"
+    APP_NAME: str = "Event Booking"
+    DEBUG: bool = True
+    
+    # MongoDB Settings
+    MONGO_URI: str = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+    DATABASE_NAME: str = os.getenv("DATABASE_NAME", "event_booking")
+    
+    # JWT Settings
+    JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "your-secret-key-here")
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    
+    # Paystack Settings
+    PAYSTACK_SECRET_KEY: str = os.getenv("PAYSTACK_SECRET_KEY", "")
+    PAYSTACK_PUBLIC_KEY: str = os.getenv("PAYSTACK_PUBLIC_KEY", "")
+    PAYSTACK_CALLBACK_URL: str = "http://localhost:8000/api/v1/tickets/verify-payment"
+    
+    # Email Settings
+    EMAIL_HOST: str = os.getenv("EMAIL_HOST", "smtp.gmail.com")
+    EMAIL_PORT: int = int(os.getenv("EMAIL_PORT", "587"))
+    EMAIL_HOST_USER: str = os.getenv("EMAIL_HOST_USER", "")
+    EMAIL_HOST_PASSWORD: str = os.getenv("EMAIL_HOST_PASSWORD", "")
+    EMAIL_USE_TLS: bool = True
+    
+    # Twilio Settings
+    TWILIO_ACCOUNT_SID: str = os.getenv("TWILIO_ACCOUNT_SID", "")
+    TWILIO_AUTH_TOKEN: str = os.getenv("TWILIO_AUTH_TOKEN", "")
+    TWILIO_PHONE_NUMBER: str = os.getenv("TWILIO_PHONE_NUMBER", "")
+    
+    # CORS Settings
+    BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000"]
+    
+    class Config:
+        env_file = ".env"
+        case_sensitive = True
+
+settings = Settings() 
