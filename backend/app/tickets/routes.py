@@ -13,6 +13,7 @@ from .models import (
 from app.payments.paystack import PaystackService
 from app.services.email import EmailService
 from app.services.twilio_service import TwilioService
+from bson import ObjectId
 
 router = APIRouter(prefix="/tickets", tags=["tickets"])
 paystack_service = PaystackService()
@@ -75,8 +76,17 @@ async def create_ticket(
     """
     db = await Database.get_db()
     
+    try:
+        # Convert event_id to ObjectId
+        event_id = ObjectId(ticket.event_id)
+    except:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid event ID format"
+        )
+    
     # Check if event exists
-    event = await db.events.find_one({"_id": ticket.event_id})
+    event = await db.events.find_one({"_id": event_id})
     if not event:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -102,20 +112,24 @@ async def create_ticket(
         )
     
     # Check if there are enough tickets available
-    if ticket.quantity > ticket_type["quantity"]:
+    if ticket_type["quantity"] < ticket.quantity:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Not enough tickets available"
         )
     
+    # Calculate total price
+    total_price = ticket_type["price"] * ticket.quantity
+    
     # Create ticket dictionary
     ticket_dict = ticket.model_dump()
     ticket_dict.update({
         "user_id": str(current_user.id),
+        "event_id": str(event_id),
+        "total_price": total_price,
         "status": TicketStatus.PENDING,
         "created_at": datetime.utcnow(),
-        "updated_at": datetime.utcnow(),
-        "total_price": ticket_type["price"] * ticket.quantity
+        "updated_at": datetime.utcnow()
     })
     
     # Insert ticket into database
@@ -125,14 +139,14 @@ async def create_ticket(
     # Update event ticket sales
     await db.events.update_one(
         {
-            "_id": ticket.event_id,
+            "_id": event_id,
             "ticket_types.name": ticket.ticket_type_name
         },
         {
             "$inc": {
                 "ticket_types.$.quantity": -ticket.quantity,
                 "total_tickets_sold": ticket.quantity,
-                "total_revenue": ticket_dict["total_price"]
+                "total_revenue": total_price
             }
         }
     )
@@ -454,7 +468,13 @@ async def get_tickets(
     # Build query
     query = {}
     if event_id:
-        query["event_id"] = event_id
+        try:
+            query["event_id"] = ObjectId(event_id)
+        except:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid event ID format"
+            )
     if status:
         query["status"] = status
     
@@ -467,8 +487,14 @@ async def get_tickets(
     
     # Get tickets with pagination
     skip = (page - 1) * size
-    tickets = await db.tickets.find(query).skip(skip).limit(size).to_list(length=size)
-    tickets = [Ticket(**ticket) for ticket in tickets]
+    cursor = db.tickets.find(query).skip(skip).limit(size)
+    tickets = []
+    async for ticket in cursor:
+        # Convert MongoDB document to Ticket instance
+        ticket_dict = dict(ticket)
+        if '_id' in ticket_dict:
+            ticket_dict['id'] = str(ticket_dict.pop('_id'))
+        tickets.append(Ticket(**ticket_dict))
     
     return TicketResponse(
         tickets=tickets,

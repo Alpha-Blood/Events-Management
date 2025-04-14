@@ -40,6 +40,11 @@ class EventBase(BaseModel):
     ticket_types: List[TicketType]
     is_published: bool = False
     max_attendees: Optional[int] = None
+    featured: bool = False
+    total_tickets_sold: int = 0
+    total_revenue: float = 0.0
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 class EventCreate(EventBase):
     pass
@@ -68,7 +73,27 @@ class EventInDB(EventBase):
     total_revenue: float = 0.0
 
 class Event(EventInDB):
-    pass
+    class Config:
+        json_encoders = {
+            ObjectId: str
+        }
+        populate_by_name = True
+        arbitrary_types_allowed = True
+
+    @classmethod
+    def from_mongo(cls, data: dict):
+        if not data:
+            return None
+        # Convert _id to id
+        data = dict(data)
+        if '_id' in data:
+            data['id'] = str(data.pop('_id'))
+        return cls(**data)
+
+    @classmethod
+    async def get_by_id(cls, db: AsyncIOMotorDatabase, event_id: str) -> Optional["Event"]:
+        event = await db.events.find_one({"_id": ObjectId(event_id)})
+        return cls.from_mongo(event) if event else None
 
 class EventSearch(BaseModel):
     query: Optional[str] = None

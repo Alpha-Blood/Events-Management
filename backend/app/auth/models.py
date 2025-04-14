@@ -39,12 +39,15 @@ class TokenData(BaseModel):
     email: Optional[str] = None
 
 class UserModel(BaseModel):
-    id: Optional[PyObjectId] = Field(alias="_id")
+    id: Optional[str] = Field(None, alias="_id")
     full_name: str
     email: EmailStr
     hashed_password: str
     is_admin: bool = False
     is_verified: bool = False
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    is_active: bool = True
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -59,3 +62,11 @@ class UserModel(BaseModel):
             }
         }
     )
+
+    @classmethod
+    def from_mongo(cls, data: dict):
+        """Convert MongoDB document to UserModel"""
+        if not data:
+            return None
+        id = data.pop('_id', None)
+        return cls(**dict(data, id=str(id)))

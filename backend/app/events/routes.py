@@ -3,11 +3,12 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from typing import List, Optional
 from datetime import datetime
 from app.core.config import settings
-from app.database import Database
+from app.database import Database, get_database
 from app.auth.utils import get_current_active_user, get_current_admin_user
 from app.auth.models import UserModel
 from .models import Event, EventCreate, EventUpdate, EventCategory, EventResponse
 from app.tickets.models import TicketModel
+from bson import ObjectId
 import logging
 
 router = APIRouter(prefix="/events", tags=["events"])
@@ -50,6 +51,7 @@ async def create_event(
 
 @router.get("/", response_model=EventResponse)
 async def get_events(
+    db: Database = Depends(get_database),
     category: Optional[EventCategory] = None,
     start_date: Optional[datetime] = None,
     end_date: Optional[datetime] = None,
@@ -58,12 +60,7 @@ async def get_events(
     search: Optional[str] = None,
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100)
-) -> EventResponse:
-    """
-    Get all events with optional filtering
-    """
-    db = await Database.get_db()
-    
+):
     # Build query
     query = {}
     if category:
@@ -79,20 +76,22 @@ async def get_events(
         if max_price is not None:
             query["ticket_types.price"]["$lte"] = max_price
     if search:
-        query["$or"] = [
-            {"title": {"$regex": search, "$options": "i"}},
-            {"description": {"$regex": search, "$options": "i"}},
-            {"venue": {"$regex": search, "$options": "i"}}
-        ]
-    
+        query["$text"] = {"$search": search}
+
     # Get total count
     total = await db.events.count_documents(query)
-    
-    # Get events with pagination
+
+    # Get paginated results
     skip = (page - 1) * size
-    events = await db.events.find(query).skip(skip).limit(size).to_list(length=size)
-    events = [Event(**event) for event in events]
-    
+    cursor = db.events.find(query).skip(skip).limit(size)
+    events = []
+    async for event in cursor:
+        # Convert MongoDB document to Event instance
+        event_dict = dict(event)
+        if '_id' in event_dict:
+            event_dict['id'] = str(event_dict.pop('_id'))
+        events.append(Event(**event_dict))
+
     return EventResponse(
         events=events,
         total=total,
@@ -196,3 +195,75 @@ async def get_categories() -> List[str]:
     Get all available event categories
     """
     return [category.value for category in EventCategory]
+
+@router.get("/featured", response_model=EventResponse)
+async def get_featured_events(
+    db: Database = Depends(get_database),
+    page: int = Query(1, ge=1),
+    size: int = Query(10, ge=1, le=100)
+):
+    """
+    Get featured events
+    """
+    # Build query for featured events
+    query = {"featured": True}
+    
+    # Get total count
+    total = await db.events.count_documents(query)
+    
+    # Get paginated results
+    skip = (page - 1) * size
+    cursor = db.events.find(query).skip(skip).limit(size)
+    events = []
+    async for event in cursor:
+        # Convert MongoDB document to Event instance
+        event_dict = dict(event)
+        if '_id' in event_dict:
+            event_dict['id'] = str(event_dict.pop('_id'))
+        events.append(Event(**event_dict))
+    
+    return EventResponse(
+        events=events,
+        total=total,
+        page=page,
+        size=size
+    )
+
+@router.patch("/{event_id}/featured", response_model=Event)
+async def update_event_featured_status(
+    event_id: str,
+    featured: bool,
+    db: Database = Depends(get_database),
+    current_user: UserModel = Depends(get_current_admin_user)
+):
+    """
+    Update event featured status (admin only)
+    """
+    try:
+        event_id = ObjectId(event_id)
+    except:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid event ID format"
+        )
+    
+    # Check if event exists
+    event = await db.events.find_one({"_id": event_id})
+    if not event:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Event not found"
+        )
+    
+    # Update featured status
+    await db.events.update_one(
+        {"_id": event_id},
+        {"$set": {"featured": featured, "updated_at": datetime.utcnow()}}
+    )
+    
+    # Get updated event
+    updated_event = await db.events.find_one({"_id": event_id})
+    event_dict = dict(updated_event)
+    if '_id' in event_dict:
+        event_dict['id'] = str(event_dict.pop('_id'))
+    return Event(**event_dict)

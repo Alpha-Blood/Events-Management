@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
-from datetime import timedelta
+from datetime import timedelta, datetime
 from typing import Any
-from ..core.config import settings
-from ..database import Database
-from .models import UserCreate, UserModel, Token, UserLogin
-from .utils import (
+from app.core.config import settings
+from app.database import Database
+from app.auth.models import UserCreate, UserModel, Token, UserLogin
+from app.auth.utils import (
     get_password_hash,
     verify_password,
     create_access_token,
@@ -48,19 +48,19 @@ async def register(user_data: UserCreate) -> Any:
     
     # Insert user into database
     result = await db.users.insert_one(user_dict)
-    user_dict["id"] = str(result.inserted_id)
+    user_dict["_id"] = str(result.inserted_id)
     
     return UserModel(**user_dict)
 
 @router.post("/login", response_model=Token)
-async def login(form_data: OAuth2PasswordRequestForm = Depends()) -> Any:
+async def login(user_data: UserLogin) -> Any:
     """
     Login user and return access token
     """
     db = await Database.get_db()
-    user = await db.users.find_one({"email": form_data.username})
+    user = await db.users.find_one({"email": user_data.email})
     
-    if not user or not verify_password(form_data.password, user["hashed_password"]):
+    if not user or not verify_password(user_data.password, user["hashed_password"]):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
