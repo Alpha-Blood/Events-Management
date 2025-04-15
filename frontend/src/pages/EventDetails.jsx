@@ -1,131 +1,96 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import concertImage from '../assets/events/concert.jpg';
-import artImage from '../assets/events/art.jpg';
-import techImage from '../assets/events/tech.jpg';
-import image5 from '../assets/events/hero-bg2.jpg';
 import EventCard from '../components/EventCard';
-
-// This should match the events data from EventSection and Events page
-const allEvents = [
-  {
-    id: 1,
-    image: concertImage,
-    title: 'The Big 6 Round Table',
-    date: '2 May',
-    venue: 'The O2',
-    description: 'Join us for an exclusive round table discussion with industry leaders. This event will feature insightful conversations about the future of technology and business in Africa. Network with professionals and gain valuable insights from our distinguished panel of speakers.',
-    tickets: [
-      { id: 'earlyBird', name: 'Early Bird', price: 495000, available: 50 },
-      { id: 'vip', name: 'VIP', price: 750000, available: 20 },
-      { id: 'vvip', name: 'VVIP', price: 1000000, available: 10 }
-    ]
-  },
-  {
-    id: 2,
-    image: artImage,
-    title: 'AFROBEATS FESTIVAL 2025',
-    date: '15 June',
-    venue: 'Nyayo Stadium',
-    description: 'Experience the biggest Afrobeat music festival in East Africa! Featuring top artists from across the continent, this event promises an unforgettable night of music, dance, and celebration of African culture.',
-    tickets: [
-      { id: 'standard', name: 'Standard', price: 2500, available: 1000 },
-      { id: 'vip', name: 'VIP', price: 5000, available: 200 }
-    ]
-  },
-  {
-    id: 3,
-    image: techImage,
-    title: 'Tech Conference 2024',
-    date: '15 June',
-    venue: 'KICC',
-    description: 'The premier technology conference in East Africa, bringing together innovators, entrepreneurs, and tech enthusiasts. Learn about the latest trends, network with industry leaders, and discover new opportunities in the tech space.',
-    tickets: [
-      { id: 'earlyBird', name: 'Early Bird', price: 15000, available: 100 },
-      { id: 'standard', name: 'Standard', price: 20000, available: 300 }
-    ]
-  },
-  {
-    id: 4,
-    image: image5,
-    title: 'Art Exhibition',
-    date: '20 June',
-    venue: 'National Museum',
-    description: 'A showcase of contemporary African art featuring works from emerging and established artists. This exhibition explores themes of identity, culture, and social change through various artistic mediums.',
-    tickets: [
-      { id: 'standard', name: 'Standard', price: 2500, available: 500 }
-    ]
-  }
-];
+import eventService from '../services/eventService';
 
 const EventDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [event, setEvent] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [ticketCounts, setTicketCounts] = useState({});
+  const [selectedTickets, setSelectedTickets] = useState({});
+  const [featuredEvents, setFeaturedEvents] = useState([]);
 
   useEffect(() => {
-    const foundEvent = allEvents.find(e => e.id === parseInt(id));
-    if (foundEvent) {
-      setEvent(foundEvent);
-      // Initialize ticket counts for each ticket type
-      const initialCounts = {};
-      foundEvent.tickets.forEach(ticket => {
-        initialCounts[ticket.id] = 0;
-      });
-      setTicketCounts(initialCounts);
-    }
+    const fetchEventAndFeatured = async () => {
+      try {
+        setLoading(true);
+        const [eventData, featuredData] = await Promise.all([
+          eventService.getEventById(id),
+          eventService.getFeaturedEvents(1, 4)
+        ]);
+        setEvent(eventData);
+        setFeaturedEvents(featuredData.events || []);
+        // Initialize ticket counts
+        const initialCounts = {};
+        eventData.ticket_types.forEach(ticket => {
+          initialCounts[ticket.name] = 0;
+        });
+        setSelectedTickets(initialCounts);
+      } catch (err) {
+        setError(err.message);
+        console.error('Error fetching data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEventAndFeatured();
   }, [id]);
 
-  const handleDecrement = (ticketId) => {
-    if (ticketCounts[ticketId] > 0) {
-      setTicketCounts(prev => ({
+  const handleDecrement = (ticketName) => {
+    if (selectedTickets[ticketName] > 0) {
+      setSelectedTickets(prev => ({
         ...prev,
-        [ticketId]: prev[ticketId] - 1
+        [ticketName]: prev[ticketName] - 1
       }));
     }
   };
 
-  const handleIncrement = (ticketId) => {
-    const ticket = event.tickets.find(t => t.id === ticketId);
-    if (ticketCounts[ticketId] < ticket.available) {
-      setTicketCounts(prev => ({
+  const handleIncrement = (ticketName) => {
+    const ticket = event.ticket_types.find(t => t.name === ticketName);
+    if (selectedTickets[ticketName] < ticket.quantity) {
+      setSelectedTickets(prev => ({
         ...prev,
-        [ticketId]: prev[ticketId] + 1
+        [ticketName]: prev[ticketName] + 1
       }));
     }
   };
 
   const calculateTotal = () => {
     if (!event) return 0;
-    return event.tickets.reduce((total, ticket) => {
-      return total + (ticket.price * (ticketCounts[ticket.id] || 0));
+    return event.ticket_types.reduce((total, ticket) => {
+      return total + (ticket.price * (selectedTickets[ticket.name] || 0));
     }, 0);
   };
 
-  const totalTickets = Object.values(ticketCounts).reduce((a, b) => a + b, 0);
+  const totalTickets = Object.values(selectedTickets).reduce((a, b) => a + b, 0);
 
   const handleGetTickets = () => {
-    // Filter out tickets with quantity 0
-    const selectedTickets = event.tickets.filter(ticket => ticketCounts[ticket.id] > 0);
-    
-    if (selectedTickets.length === 0) {
+    if (totalTickets === 0) {
       alert('Please select at least one ticket');
       return;
     }
 
-    // Navigate to checkout with event and selected tickets data
+    const ticketsToBook = event.ticket_types
+      .filter(ticket => selectedTickets[ticket.name] > 0)
+      .map(ticket => ({
+        ticket_type_name: ticket.name,
+        quantity: selectedTickets[ticket.name],
+        price: ticket.price,
+        total: ticket.price * selectedTickets[ticket.name]
+      }));
+
     navigate('/checkout', {
       state: {
-        event: {
-          id,
-          title: event.title,
-          date: event.date,
-          venue: event.venue,
-          image: event.image
-        },
-        selectedTickets
+        event_id: event.id,
+        event_title: event.title,
+        event_date: event.start_date,
+        event_venue: event.venue,
+        tickets: ticketsToBook,
+        total_amount: calculateTotal()
       }
     });
   };
@@ -134,13 +99,41 @@ const EventDetails = () => {
     navigate('/events');
   };
 
-  if (!event) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-xl text-gray-600">Loading...</div>
+        <div className="animate-pulse">
+          <div className="h-8 w-64 bg-gray-300 rounded mb-4"></div>
+          <div className="h-4 w-48 bg-gray-300 rounded"></div>
+        </div>
       </div>
     );
   }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-xl text-red-500">Error loading event. Please try again later.</div>
+      </div>
+    );
+  }
+
+  if (!event) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-xl text-gray-600">Event not found</div>
+      </div>
+    );
+  }
+
+  const formattedDate = new Date(event.start_date).toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric'
+  });
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -149,7 +142,7 @@ const EventDetails = () => {
         <div 
           className="absolute inset-0 bg-cover bg-center"
           style={{
-            backgroundImage: `url('${event.image}')`,
+            backgroundImage: `url(${event.image_url || 'https://via.placeholder.com/1200x600?text=Event+Image'})`,
           }}
         >
           <div className="absolute inset-0 bg-black/60"></div>
@@ -165,7 +158,7 @@ const EventDetails = () => {
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                <span className="text-xl">{event.date}</span>
+                <span className="text-xl">{formattedDate}</span>
               </div>
               <div className="flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -200,7 +193,6 @@ const EventDetails = () => {
       <div className="hidden lg:block bg-navy">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
           <div className="flex gap-12">
-            {/* Event Details */}
             <div className="flex-1 text-white">
               <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-6">
                 {event.title}
@@ -210,7 +202,7 @@ const EventDetails = () => {
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
-                  <span className="text-xl">{event.date}</span>
+                  <span className="text-xl">{formattedDate}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -239,10 +231,9 @@ const EventDetails = () => {
               )}
             </div>
 
-            {/* Event Image */}
             <div className="w-96 h-96 self-start">
               <img
-                src={event.image}
+                src={event.image_url || 'https://via.placeholder.com/1200x600?text=Event+Image'}
                 alt={event.title}
                 className="w-full h-full object-cover rounded-lg shadow-xl"
               />
@@ -251,109 +242,98 @@ const EventDetails = () => {
         </div>
       </div>
 
-      {/* Tickets Section */}
+      {/* Ticket Selection Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">TICKETS</h2>
-          
-          <div className="space-y-6">
-            {event.tickets.map((ticket) => (
-              <div key={ticket.id} className="flex items-center justify-between py-4 border-b border-gray-200">
+        <h2 className="text-2xl font-bold mb-8">Select Tickets</h2>
+        <div className="space-y-6">
+          {event.ticket_types.map((ticket) => (
+            <div key={ticket.name} className="bg-white rounded-lg shadow p-6">
+              <div className="flex justify-between items-center">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">{ticket.name}</h3>
-                  <p className="text-gray-600">KSH {ticket.price.toLocaleString()}</p>
-                  <p className="text-sm text-gray-500">Available: {ticket.available}</p>
+                  <h3 className="text-lg font-semibold">{ticket.name}</h3>
+                  <p className="text-gray-600">KES {ticket.price.toLocaleString()}</p>
+                  <p className="text-sm text-gray-500">{ticket.quantity} tickets remaining</p>
                 </div>
                 <div className="flex items-center gap-4">
                   <button
-                    onClick={() => handleDecrement(ticket.id)}
-                    className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center hover:bg-blue-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={ticketCounts[ticket.id] === 0}
+                    onClick={() => handleDecrement(ticket.name)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100"
+                    disabled={selectedTickets[ticket.name] === 0}
                   >
                     -
                   </button>
-                  <span className="w-8 text-center">{ticketCounts[ticket.id] || 0}</span>
+                  <span className="w-8 text-center">{selectedTickets[ticket.name] || 0}</span>
                   <button
-                    onClick={() => handleIncrement(ticket.id)}
-                    className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center hover:bg-blue-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={ticketCounts[ticket.id] === ticket.available}
+                    onClick={() => handleIncrement(ticket.name)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100"
+                    disabled={selectedTickets[ticket.name] === ticket.quantity}
                   >
                     +
                   </button>
                 </div>
               </div>
-            ))}
-          </div>
-
-          {/* Total Section */}
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <div className="space-y-4">
-              <div className="flex justify-between text-gray-600">
-                <span>Tickets</span>
-                <span>{totalTickets}</span>
-              </div>
-              <div className="flex justify-between text-gray-600">
-                <span>Processing fees</span>
-                <span>0</span>
-              </div>
-              <div className="flex justify-between text-gray-600">
-                <span>Applied discount (0%)</span>
-                <span>0</span>
-              </div>
-              <div className="flex justify-between text-xl font-bold text-gray-900">
-                <span>Total</span>
-                <span>KSH {calculateTotal().toLocaleString()}</span>
-              </div>
             </div>
+          ))}
+        </div>
 
-            <div className="mt-8">
-              <button
-                onClick={handleGetTickets}
-                className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors duration-200"
-              >
-                Get Tickets
-              </button>
-            </div>
+        <div className="mt-8 flex justify-between items-center">
+          <div>
+            <p className="text-gray-600">Total Tickets: {totalTickets}</p>
+            <p className="text-xl font-semibold">Total: KES {calculateTotal().toLocaleString()}</p>
           </div>
-        </div>
-      </div>
-
-      {/* Other Events Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900">Other Events You Might Like</h2>
-          <p className="mt-4 text-gray-600">Discover more exciting events happening soon</p>
-        </div>
-        
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-8">
-          {allEvents
-            .filter(e => e.id !== parseInt(id))
-            .map(event => (
-              <EventCard
-                key={event.id}
-                id={event.id}
-                image={event.image}
-                title={event.title}
-                date={event.date}
-                venue={event.venue}
-                price={event.tickets[0].price}
-              />
-            ))
-          }
-        </div>
-
-        <div className="mt-12 text-center">
           <button
-            onClick={handleShowMore}
-            className="inline-flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+            onClick={handleGetTickets}
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+            disabled={totalTickets === 0}
           >
-            Show More
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-            </svg>
+            Get Tickets
           </button>
         </div>
       </div>
+
+      {/* Featured Events Section */}
+      {featuredEvents.length > 0 && (
+        <section className="bg-gray-50 py-3 px-4 sm:px-8">
+          <div className="max-w-7xl mx-auto">
+            <h2 className="text-3xl sm:text-4xl font-bold text-center text-gray-900 mb-10">
+              Featured Events
+            </h2>
+
+            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-8">
+              {featuredEvents
+                .filter(e => e.id !== event.id)
+                .map((featuredEvent) => (
+                  <EventCard 
+                    key={featuredEvent.id} 
+                    event={featuredEvent} 
+                  />
+                ))
+              }
+            </div>
+
+            <div className="flex justify-center mt-8 sm:mt-12">
+              <button 
+                onClick={handleShowMore}
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg text-sm sm:text-base font-medium hover:bg-blue-700 transition flex items-center gap-2"
+              >
+                Show More
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  className="h-5 w-5" 
+                  viewBox="0 0 20 20" 
+                  fill="currentColor"
+                >
+                  <path 
+                    fillRule="evenodd" 
+                    d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" 
+                    clipRule="evenodd" 
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   );
 };

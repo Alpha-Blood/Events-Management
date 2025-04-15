@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-
+ 
 const LINKS = [
   {
     title: "Events",
@@ -15,9 +15,9 @@ const LINKS = [
     items: ["Help Center", "FAQs", "Terms of Service", "Privacy Policy"],
   },
 ];
-
+ 
 const currentYear = new Date().getFullYear();
-
+ 
 const Footer = () => {
   return (
     <footer className="bg-gray-900 text-white">
@@ -49,8 +49,8 @@ const Footer = () => {
                 <Link to="/contact" className="text-gray-400 hover:text-white text-sm">
                   Contact Us
                 </Link>
-              </li>
-            </ul>
+                  </li>
+              </ul>
           </div>
 
           {/* Support */}
@@ -78,7 +78,7 @@ const Footer = () => {
                 </Link>
               </li>
             </ul>
-          </div>
+        </div>
 
           {/* Contact Info */}
           <div>
@@ -109,3 +109,4 @@ const Footer = () => {
 };
 
 export default Footer;
+  

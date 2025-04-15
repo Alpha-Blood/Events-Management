@@ -72,10 +72,10 @@ class EventInDB(EventBase):
     total_tickets_sold: int = 0
     total_revenue: float = 0.0
 
-class Event(EventInDB):
     class Config:
         json_encoders = {
-            ObjectId: str
+            ObjectId: str,
+            datetime: lambda dt: dt.isoformat()
         }
         populate_by_name = True
         arbitrary_types_allowed = True
@@ -88,7 +88,25 @@ class Event(EventInDB):
         data = dict(data)
         if '_id' in data:
             data['id'] = str(data.pop('_id'))
+        # Convert datetime fields to strings
+        for field in ['start_date', 'end_date', 'created_at', 'updated_at']:
+            if field in data and isinstance(data[field], datetime):
+                data[field] = data[field].isoformat()
+        # Convert nested objects
+        if 'ticket_types' in data:
+            for ticket_type in data['ticket_types']:
+                if '_id' in ticket_type:
+                    ticket_type['id'] = str(ticket_type.pop('_id'))
         return cls(**data)
+
+class Event(EventInDB):
+    class Config:
+        json_encoders = {
+            ObjectId: str,
+            datetime: lambda dt: dt.isoformat()
+        }
+        populate_by_name = True
+        arbitrary_types_allowed = True
 
     @classmethod
     async def get_by_id(cls, db: AsyncIOMotorDatabase, event_id: str) -> Optional["Event"]:

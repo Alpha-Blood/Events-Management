@@ -1,8 +1,31 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const SearchBar = () => {
+  const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState('');
   const [dateValue, setDateValue] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
+
+  const handleSearch = () => {
+    const params = new URLSearchParams();
+    
+    if (searchTerm.trim()) {
+      params.append('search', searchTerm.trim());
+    }
+    
+    if (dateValue) {
+      params.append('start_date', dateValue);
+    }
+
+    navigate(`/events?${params.toString()}`);
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
 
   return (
     <div className="bg-white border border-blue-600 rounded-xl sm:rounded-95 shadow-lg">
@@ -11,7 +34,10 @@ const SearchBar = () => {
         <input
           type="text"
           placeholder="Search event, city or venue"
-          className="flex-1 px-2 py-1.5 text-sm text-gray-900  focus:outline-none"
+          className="flex-1 px-2 py-1.5 text-sm text-gray-900 focus:outline-none"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onKeyPress={handleKeyPress}
           onClick={() => setIsExpanded(true)}
         />
         <button 
@@ -33,7 +59,10 @@ const SearchBar = () => {
             onChange={(e) => setDateValue(e.target.value)}
             className="w-full px-2 py-1.5 text-sm text-gray-900 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-          <button className="w-full bg-blue-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition">
+          <button 
+            onClick={handleSearch}
+            className="w-full bg-blue-600 text-white px-4 py-1.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+          >
             Search
           </button>
         </div>
@@ -44,15 +73,21 @@ const SearchBar = () => {
         <input
           type="text"
           placeholder="Search event, city or venue"
-          className="flex-1 px-4 py-2 border border-blue-600 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 text-base"
+          className="flex-1 px-4 py-2 border border-blue-600 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 text-base"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onKeyPress={handleKeyPress}
         />
         <input
           type="date"
           value={dateValue}
           onChange={(e) => setDateValue(e.target.value)}
-          className="flex-1 px-4 py-2 border border-blue-600 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 text-base"
+          className="flex-1 px-4 py-2 border border-blue-600 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 text-base"
         />
-        <button className="bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-700 transition text-base font-medium">
+        <button 
+          onClick={handleSearch}
+          className="bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-700 transition text-base font-medium"
+        >
           Search
         </button>
       </div>
