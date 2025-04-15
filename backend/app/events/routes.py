@@ -8,11 +8,12 @@ from app.core.config import settings
 from app.database import Database, get_database
 from app.auth.utils import get_current_active_user, get_current_admin_user
 from app.auth.models import UserModel
-from .models import Event, EventCreate, EventUpdate, EventCategory, EventResponse
+from .models import Event, EventCreate, EventUpdate, EventCategory, EventResponse, EVENT_INDEXES
 from app.tickets.models import TicketModel
 from bson import ObjectId
 import logging
 import json
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/events", tags=["events"])
 logger = logging.getLogger(__name__)
@@ -23,6 +24,49 @@ cloudinary.config(
     api_key=settings.CLOUDINARY_API_KEY,
     api_secret=settings.CLOUDINARY_API_SECRET
 )
+
+# Create indexes when the application starts
+@router.on_event("startup")
+async def create_indexes():
+    try:
+        db = await get_database()
+        collection = db.events
+        
+        # Get list of existing indexes
+        existing_indexes = await collection.list_indexes().to_list(length=None)
+        existing_index_names = [index["name"] for index in existing_indexes]
+        
+        # Drop existing text index if it exists
+        text_index_name = "title_text_description_text_venue_text_location_text"
+        if text_index_name in existing_index_names:
+            try:
+                await collection.drop_index(text_index_name)
+                logger.info(f"Dropped existing text index: {text_index_name}")
+            except Exception as e:
+                logger.error(f"Error dropping text index: {str(e)}")
+        
+        # Create new indexes
+        for index in EVENT_INDEXES:
+            try:
+                if isinstance(index, dict) and "keys" in index:
+                    # This is the text index
+                    await collection.create_index(
+                        index["keys"],
+                        weights=index.get("weights", {}),
+                        name=text_index_name
+                    )
+                    logger.info(f"Created text index: {text_index_name}")
+                else:
+                    # These are regular indexes
+                    index_name = "_".join([f"{field}_{direction}" for field, direction in index])
+                    if index_name not in existing_index_names:
+                        await collection.create_index(index)
+                        logger.info(f"Created index: {index_name}")
+            except Exception as e:
+                logger.error(f"Error creating index {index}: {str(e)}")
+    except Exception as e:
+        logger.error(f"Error in create_indexes: {str(e)}")
+        raise
 
 async def upload_image_to_cloudinary(file: UploadFile) -> str:
     try:

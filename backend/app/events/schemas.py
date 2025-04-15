@@ -94,8 +94,8 @@ class EventResponse(BaseModel):
 # Database indexes
 EVENT_INDEXES = [
     {
-        "keys": [("title", "text"), ("description", "text")],
-        "weights": {"title": 10, "description": 5}
+        "keys": [("title", "text"), ("description", "text"), ("venue", "text"), ("location", "text")],
+        "weights": {"title": 10, "description": 5, "venue": 8, "location": 8}
     },
     [("category", 1)],
     [("start_date", 1)],

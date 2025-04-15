@@ -1,0 +1,3 @@
+"""
+Event Booking App Package
+""" 

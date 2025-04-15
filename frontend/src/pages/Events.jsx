@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import EventCard from '../components/EventCard';
 import Header from '../components/Header';
 import eventService from '../services/eventService';
 import image6 from '../assets/events/hero-bg3.jpg';
+import debounce from 'lodash/debounce';
 
 const Events = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -15,6 +16,29 @@ const Events = () => {
   const [page, setPage] = useState(1);
   const [totalEvents, setTotalEvents] = useState(0);
   const pageSize = 12;
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    debounce((query) => {
+      setSearchParams({ search: query });
+    }, 500),
+    [setSearchParams]
+  );
+
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    debouncedSearch(query);
+  };
+
+  // Cleanup debounced function
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
 
   // Effect to handle URL search params
   useEffect(() => {
@@ -87,8 +111,8 @@ const Events = () => {
                 type="text"
                 placeholder="Search events or venues..."
                 className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={searchQuery}
+                onChange={handleSearchChange}
               />
             </div>
             <div className="w-full sm:w-48">
