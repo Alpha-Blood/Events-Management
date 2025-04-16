@@ -34,6 +34,7 @@ const AppRoutes = () => {
         <Route path="terms" element={<Terms />} />
         <Route path="privacy" element={<Privacy />} />
         <Route path="auth/google/callback" element={<OAuthCallback />} />
+        <Route path="auth/facebook/callback" element={<OAuthCallback />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

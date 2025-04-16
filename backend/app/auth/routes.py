@@ -236,28 +236,37 @@ async def facebook_callback(code: str):
                 "is_active": True,
                 "is_verified": True,
                 "hashed_password": "",
-                "created_at": datetime.utcnow(),
-                "updated_at": datetime.utcnow()
+                "created_at": datetime.utcnow().isoformat(),
+                "updated_at": datetime.utcnow().isoformat()
             }
             result = await db.users.insert_one(user_data)
-            user_data["_id"] = result.inserted_id
+            user_data["_id"] = str(result.inserted_id)
             user = user_data
-        user_model = UserModel.from_mongo(user)
-        if not user_model:
-            raise HTTPException(status_code=400, detail="Failed to create user model")
+        else:
+            # Convert MongoDB document to dict and handle ObjectId
+            user = dict(user)
+            user["_id"] = str(user["_id"])
+            # Convert datetime fields to ISO format strings
+            for field in ["created_at", "updated_at"]:
+                if field in user and isinstance(user[field], datetime):
+                    user[field] = user[field].isoformat()
+        
         access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
-            data={"sub": user_model.email},
+            data={"sub": user["email"]},
             expires_delta=access_token_expires
         )
+        
         params = {
             "access_token": access_token,
-            "user": urllib.parse.quote(json.dumps(user_model.model_dump(by_alias=True)))
+            "user": urllib.parse.quote(json.dumps(user))
         }
         redirect_url = f"http://localhost:5173/auth/facebook/callback?{urllib.parse.urlencode(params)}"
         return RedirectResponse(redirect_url)
     except Exception as e:
-        error_url = f"http://localhost:5173/login?error={urllib.parse.quote(str(e))}"
+        print(f"Error in Facebook callback: {str(e)}")  # Add logging
+        error_message = str(e)
+        error_url = f"http://localhost:5173/login?error={urllib.parse.quote(error_message)}"
         return RedirectResponse(error_url)
 
 @router.post("/send-verification-email")
