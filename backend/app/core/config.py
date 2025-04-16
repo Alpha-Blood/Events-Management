@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Event Booking API"
     APP_NAME: str = "Event Booking"
     DEBUG: bool = True
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:5173")
     
     # MongoDB Settings
     MONGO_URI: str = os.getenv("MONGO_URI", "mongodb://localhost:27017")

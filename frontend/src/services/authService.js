@@ -1,23 +1,47 @@
 import axios from 'axios';
 
 const API_URL = 'http://localhost:8000/api/v1';
+const FRONTEND_GOOGLE_CALLBACK = 'http://localhost:5173/auth/google/callback';
+const FRONTEND_FACEBOOK_CALLBACK = 'http://localhost:5173/auth/facebook/callback';
 
 const authService = {
   // Regular authentication
-  async register(data) {
-    const response = await axios.post(`${API_URL}/auth/register`, data);
-    return response.data;
+  async register(userData) {
+    try {
+      const response = await axios.post(`${API_URL}/auth/register`, userData);
+      if (response.data.access_token) {
+        localStorage.setItem('token', response.data.access_token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      }
+      return response.data;
+    } catch (error) {
+      throw error.response?.data?.detail || 'Registration failed';
+    }
   },
 
   async login(email, password) {
-    const response = await axios.post(`${API_URL}/auth/login`, { email, password });
-    return response.data;
+    try {
+      const response = await axios.post(`${API_URL}/auth/login`, { email, password });
+      if (response.data.access_token) {
+        localStorage.setItem('token', response.data.access_token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      }
+      return response.data;
+    } catch (error) {
+      throw error.response?.data?.detail || 'Login failed';
+    }
   },
 
-  async logout(token) {
+  async logout() {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No token found');
+    }
     await axios.post(`${API_URL}/auth/logout`, null, {
       headers: { Authorization: `Bearer ${token}` }
     });
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
   },
 
   async getCurrentUser(token) {
@@ -29,11 +53,13 @@ const authService = {
 
   // Social authentication
   async getGoogleAuthUrl() {
+    // The backend must use FRONTEND_GOOGLE_CALLBACK as the redirect_uri
     const response = await axios.get(`${API_URL}/auth/google`);
     return response.data.auth_url;
   },
 
   async getFacebookAuthUrl() {
+    // The backend must use FRONTEND_FACEBOOK_CALLBACK as the redirect_uri
     const response = await axios.get(`${API_URL}/auth/facebook`);
     return response.data.auth_url;
   },
@@ -69,6 +95,18 @@ const authService = {
 
   removeToken() {
     localStorage.removeItem('token');
+  },
+
+  // Store redirect URL in localStorage
+  setRedirectUrl(url) {
+    localStorage.setItem('redirectUrl', url);
+  },
+
+  // Get and clear redirect URL
+  getRedirectUrl() {
+    const url = localStorage.getItem('redirectUrl');
+    localStorage.removeItem('redirectUrl');
+    return url || '/';
   }
 };
 

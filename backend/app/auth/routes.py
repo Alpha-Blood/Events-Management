@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from datetime import timedelta, datetime
 from typing import Any
 from app.core.config import settings
-from app.database import Database
+from app.database import Database, get_database
 from app.auth.models import UserCreate, UserModel, Token, UserLogin
 from app.auth.utils import (
     get_password_hash,
@@ -22,6 +22,9 @@ from app.auth.social_auth import (
 )
 from app.auth.email import send_verification_email
 from sqlalchemy.orm import Session
+from fastapi.responses import RedirectResponse
+import urllib.parse
+import json
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -168,46 +171,49 @@ async def google_auth():
     return {"auth_url": auth_url}
 
 @router.get("/google/callback")
-async def google_callback(code: str, db: Session = Depends(get_db)):
+async def google_callback(code: str, db = Depends(get_database)):
     try:
         user_info = await get_google_user_info(code)
-        
-        # Check if user exists
-        user = db.query(UserModel).filter(UserModel.email == user_info["email"]).first()
-        
+        user = await db.users.find_one({"email": user_info["email"]})
         if not user:
-            # Create new user
-            user = UserModel(
-                email=user_info["email"],
-                full_name=user_info["name"],
-                is_active=True,
-                is_superuser=False,
-                is_verified=True  # Google-verified email
-            )
-            db.add(user)
-            db.commit()
-            db.refresh(user)
-        
-        # Generate access token
-        access_token = create_access_token(data={"sub": user.email})
-        
-        return {
-            "access_token": access_token,
-            "token_type": "bearer",
-            "user": {
-                "id": user.id,
-                "email": user.email,
-                "full_name": user.full_name,
-                "is_active": user.is_active,
-                "is_superuser": user.is_superuser
+            user_data = {
+                "email": user_info["email"],
+                "full_name": user_info["name"],
+                "is_active": True,
+                "is_verified": True,
+                "hashed_password": "",
+                "created_at": datetime.utcnow().isoformat(),
+                "updated_at": datetime.utcnow().isoformat()
             }
-        }
-    except Exception as e:
-        print(f"Google callback error: {str(e)}")  # For debugging
-        raise HTTPException(
-            status_code=400,
-            detail=f"Google authentication failed: {str(e)}"
+            result = await db.users.insert_one(user_data)
+            user_data["_id"] = str(result.inserted_id)
+            user = user_data
+        else:
+            # Convert MongoDB document to dict and handle ObjectId
+            user = dict(user)
+            user["_id"] = str(user["_id"])
+            # Convert datetime fields to ISO format strings
+            for field in ["created_at", "updated_at"]:
+                if field in user and isinstance(user[field], datetime):
+                    user[field] = user[field].isoformat()
+        
+        access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": user["email"]},
+            expires_delta=access_token_expires
         )
+        
+        params = {
+            "access_token": access_token,
+            "user": urllib.parse.quote(json.dumps(user))
+        }
+        redirect_url = f"http://localhost:5173/auth/google/callback?{urllib.parse.urlencode(params)}"
+        return RedirectResponse(redirect_url)
+    except Exception as e:
+        print(f"Error in Google callback: {str(e)}")  # Add logging
+        error_message = str(e)
+        error_url = f"http://localhost:5173/login?error={urllib.parse.quote(error_message)}"
+        return RedirectResponse(error_url)
 
 @router.get("/facebook")
 async def facebook_auth():
@@ -219,46 +225,40 @@ async def facebook_auth():
 
 @router.get("/facebook/callback")
 async def facebook_callback(code: str):
-    """
-    Handle Facebook OAuth callback
-    """
     try:
         user_info = await get_facebook_user_info(code)
         db = await Database.get_db()
-        
-        # Check if user exists
         user = await db.users.find_one({"email": user_info["email"]})
         if not user:
-            # Create new user
             user_data = {
                 "email": user_info["email"],
                 "full_name": user_info["name"],
                 "is_active": True,
                 "is_verified": True,
+                "hashed_password": "",
                 "created_at": datetime.utcnow(),
                 "updated_at": datetime.utcnow()
             }
             result = await db.users.insert_one(user_data)
-            user_data["_id"] = str(result.inserted_id)
+            user_data["_id"] = result.inserted_id
             user = user_data
-        
-        # Create access token
+        user_model = UserModel.from_mongo(user)
+        if not user_model:
+            raise HTTPException(status_code=400, detail="Failed to create user model")
         access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
-            data={"sub": user["email"]},
+            data={"sub": user_model.email},
             expires_delta=access_token_expires
         )
-        
-        return {
+        params = {
             "access_token": access_token,
-            "token_type": "bearer",
-            "user": UserModel(**user)
+            "user": urllib.parse.quote(json.dumps(user_model.model_dump(by_alias=True)))
         }
+        redirect_url = f"http://localhost:5173/auth/facebook/callback?{urllib.parse.urlencode(params)}"
+        return RedirectResponse(redirect_url)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        error_url = f"http://localhost:5173/login?error={urllib.parse.quote(str(e))}"
+        return RedirectResponse(error_url)
 
 @router.post("/send-verification-email")
 async def send_verification_email_endpoint(
@@ -289,13 +289,11 @@ async def reset_password(email: str):
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="User not found"
             )
-        
         # Generate reset token
         reset_token = create_access_token(
             data={"sub": email},
             expires_delta=timedelta(minutes=15)
         )
-        
         # Send reset email
         await send_password_reset_email(email, reset_token)
         return {"message": "Password reset email sent successfully"}

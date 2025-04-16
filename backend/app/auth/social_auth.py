@@ -24,14 +24,21 @@ async def get_google_user_info(code: str) -> Dict[str, Any]:
     try:
         # Exchange code for tokens
         token_url = "https://oauth2.googleapis.com/token"
+        token_data = {
+            "code": code,
+            "client_id": settings.GOOGLE_CLIENT_ID,
+            "client_secret": settings.GOOGLE_CLIENT_SECRET,
+            "redirect_uri": settings.GOOGLE_REDIRECT_URI,
+            "grant_type": "authorization_code"
+        }
+        
+        print(f"Token exchange request data: {token_data}")  # Debug log
+        
         async with aiohttp.ClientSession() as session:
-            async with session.post(token_url, data={
-                "code": code,
-                "client_id": settings.GOOGLE_CLIENT_ID,
-                "client_secret": settings.GOOGLE_CLIENT_SECRET,
-                "redirect_uri": settings.GOOGLE_REDIRECT_URI,
-                "grant_type": "authorization_code"
-            }) as response:
+            async with session.post(token_url, data=token_data) as response:
+                response_text = await response.text()
+                print(f"Token exchange response: {response_text}")  # Debug log
+                
                 if response.status != 200:
                     error_data = await response.json()
                     raise Exception(f"Token exchange failed: {error_data}")
@@ -61,7 +68,7 @@ async def get_google_user_info(code: str) -> Dict[str, Any]:
                     "picture": user_info.get("picture", "")
                 }
     except Exception as e:
-        print(f"Google OAuth error: {str(e)}")  # For debugging
+        print(f"Google OAuth error: {str(e)}")  # Debug log
         raise
 
 async def get_facebook_auth_url() -> str:

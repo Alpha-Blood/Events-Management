@@ -42,7 +42,7 @@ class UserModel(BaseModel):
     id: Optional[str] = Field(None, alias="_id")
     full_name: str
     email: EmailStr
-    hashed_password: str
+    hashed_password: Optional[str] = None
     is_admin: bool = False
     is_verified: bool = False
     created_at: Optional[datetime] = None

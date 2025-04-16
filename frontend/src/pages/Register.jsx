@@ -35,7 +35,8 @@ const Register = () => {
     try {
       const { confirmPassword, ...registerData } = formData;
       await authService.register(registerData);
-      navigate('/login');
+      const redirectUrl = authService.getRedirectUrl();
+      navigate(redirectUrl);
     } catch (err) {
       setError(err.response?.data?.detail || 'Registration failed');
     } finally {

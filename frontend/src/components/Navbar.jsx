@@ -1,8 +1,25 @@
 import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
+import authService from '../services/authService';
+import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+      logout();
+      navigate('/');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Even if the API call fails, we should still clear local state
+      logout();
+      navigate('/');
+    }
+  };
 
   return (
     <>
@@ -46,7 +63,7 @@ const Navbar = () => {
                 `hover:text-blue-500 transition ${isActive ? 'text-blue-600 font-semibold' : ''}`
               }
             >
-            Contact Us
+              Contact Us
             </NavLink>
           </li>
         </ul>
@@ -58,20 +75,31 @@ const Navbar = () => {
 
         {/* Desktop Auth Buttons - Hidden on Mobile */}
         <div className="hidden md:flex items-center gap-4">
-          <NavLink 
-            to="/login" 
-            className={({ isActive }) => 
-              `text-gray-600 hover:text-blue-500 transition text-sm font-medium ${isActive ? 'text-blue-600 font-semibold' : ''}`
-            }
-          >
-            Log in
-          </NavLink>
-          <NavLink 
-            to="/register" 
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-900 transition"
-          >
-            Sign Up
-          </NavLink>
+          {isAuthenticated ? (
+            <button
+              onClick={handleLogout}
+              className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition"
+            >
+              Logout
+            </button>
+          ) : (
+            <>
+              <NavLink 
+                to="/login" 
+                className={({ isActive }) => 
+                  `text-gray-600 hover:text-blue-500 transition text-sm font-medium ${isActive ? 'text-blue-600 font-semibold' : ''}`
+                }
+              >
+                Log in
+              </NavLink>
+              <NavLink 
+                to="/register" 
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-900 transition"
+              >
+                Sign Up
+              </NavLink>
+            </>
+          )}
         </div>
 
         {/* Mobile Layout */}
@@ -92,11 +120,22 @@ const Navbar = () => {
           </NavLink>
 
           {/* Right Profile Button */}
-          <NavLink to="/login" className="text-gray-600 hover:text-blue-500 p-1">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          </NavLink>
+          {isAuthenticated ? (
+            <button
+              onClick={handleLogout}
+              className="text-gray-600 hover:text-red-500 p-1"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            </button>
+          ) : (
+            <NavLink to="/login" className="text-gray-600 hover:text-blue-500 p-1">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </NavLink>
+          )}
         </div>
       </nav>
 
@@ -156,7 +195,19 @@ const Navbar = () => {
                     Contact Us
                   </NavLink>
                 </li>
-                
+                {isAuthenticated && (
+                  <li>
+                    <button
+                      onClick={() => {
+                        handleLogout();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="text-red-600 hover:text-red-700 transition cursor-pointer text-lg"
+                    >
+                      Logout
+                    </button>
+                  </li>
+                )}
               </ul>
             </div>
           </div>

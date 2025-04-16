@@ -1,20 +1,20 @@
 import React from 'react';
-import { useLocation } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import Navbar from './Navbar';
+import { AuthProvider } from '../context/AuthContext';
 import Footer from './Footer';
 
-const Layout = ({ children }) => {
-  const location = useLocation();
-  const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
-
+const Layout = () => {
   return (
-    <div className="min-h-screen flex flex-col font-sans bg-gray-50">
-      {!isAuthPage && <Navbar />}
-      <main className="flex-grow">
-        {children}
-      </main>
-      {!isAuthPage && <Footer />}
-    </div>
+    <AuthProvider>
+      <div className="min-h-screen flex flex-col bg-gray-50">
+        <Navbar />
+        <main className="flex-grow container mx-auto px-4 py-8">
+          <Outlet />
+        </main>
+        <Footer />
+      </div>
+    </AuthProvider>
   );
 };
 
