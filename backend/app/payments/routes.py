@@ -9,6 +9,7 @@ from bson import ObjectId
 from datetime import datetime
 import uuid
 import logging
+from ..email import send_ticket_email
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +59,7 @@ async def create_payment(
                 detail=f"Invalid ticket type: {ticket.name}"
             )
         
-        if ticket_type["quantity_available"] < ticket.quantity:
+        if ticket_type["quantity"] < ticket.quantity:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Not enough tickets available for {ticket.name}"
@@ -175,19 +176,25 @@ async def verify_payment(
         for ticket_type in payment.get("ticket_types", []):
             print(f"Processing ticket type: {ticket_type}")  # Debug log
 
-            # Update ticket type quantity
-            update_result = await db.events.update_one(
-                {
-                    "_id": ObjectId(payment["event_id"]),
-                    "ticket_types.name": ticket_type["name"]
-                },
-                {
-                    "$inc": {
-                        "ticket_types.$.quantity_available": -ticket_type["quantity"]
-                    }
-                }
+            # Find the ticket type in the event
+            event_ticket_type = next(
+                (tt for tt in event["ticket_types"] if tt["name"] == ticket_type["name"]),
+                None
             )
-            print(f"Update result: {update_result.modified_count}")  # Debug log
+            if event_ticket_type:
+                # Update ticket quantity in the event
+                new_quantity = event_ticket_type["quantity"] - ticket_type["quantity"]
+                await db.events.update_one(
+                    {
+                        "_id": ObjectId(payment["event_id"]),
+                        "ticket_types.name": ticket_type["name"]
+                    },
+                    {
+                        "$set": {
+                            "ticket_types.$.quantity": new_quantity
+                        }
+                    }
+                )
 
             # Create ticket record
             ticket_data = {
@@ -210,6 +217,14 @@ async def verify_payment(
             ticket_data["_id"] = str(result.inserted_id)
             tickets.append(ticket_data)
             print(f"Ticket created with ID: {result.inserted_id}")  # Debug log
+
+        # Send email with tickets
+        await send_ticket_email(
+            email=payment["email"],
+            name=payment["name"],
+            event_title=event["title"],
+            tickets=tickets
+        )
 
         return {
             "status": "success",

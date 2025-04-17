@@ -48,7 +48,7 @@ const Navbar = () => {
           </li>
           <li>
             <NavLink 
-              to="/mytickets" 
+              to="/my-tickets" 
               className={({ isActive }) => 
                 `hover:text-blue-500 transition ${isActive ? 'text-blue-600 font-semibold' : ''}`
               }
@@ -175,7 +175,7 @@ const Navbar = () => {
                 </li>
                 <li>
                   <NavLink 
-                    to="/mytickets" 
+                    to="/my-tickets" 
                     className={({ isActive }) => 
                       `text-gray-700 hover:text-blue-500 transition cursor-pointer text-lg ${isActive ? 'text-blue-600 font-semibold' : ''}`
                     }

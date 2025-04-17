@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query, Background
 from typing import List, Optional
 from datetime import datetime
 from app.core.config import settings
-from app.database import Database
-from app.auth.utils import get_current_active_user, get_current_admin_user
+from app.database import get_database
+from app.auth.utils import get_current_active_user, get_current_admin_user, get_current_user
 from app.auth.models import UserModel
 from app.events.models import Event
 from .models import (
@@ -28,7 +28,7 @@ async def process_payment_confirmation(
     Process payment confirmation and send notifications
     """
     try:
-        db = await Database.get_db()
+        db = await get_database()
         
         # Get ticket and event details
         ticket = await db.tickets.find_one({"_id": ticket_id})
@@ -74,7 +74,7 @@ async def create_ticket(
     """
     Create a new ticket
     """
-    db = await Database.get_db()
+    db = await get_database()
     
     try:
         # Convert event_id to ObjectId
@@ -163,7 +163,7 @@ async def verify_payment(
     Verify payment status and process ticket
     """
     try:
-        db = await Database.get_db()
+        db = await get_database()
         ticket = await db.tickets.find_one({"_id": ticket_id})
         if not ticket:
             raise HTTPException(
@@ -202,7 +202,7 @@ async def get_ticket(
     """
     Get ticket by ID
     """
-    db = await Database.get_db()
+    db = await get_database()
     ticket = await db.tickets.find_one({"_id": ticket_id})
     
     if not ticket:
@@ -230,7 +230,7 @@ async def get_event_tickets(
     """
     Get tickets for a specific event.
     """
-    db = await Database.get_db()
+    db = await get_database()
     
     # Build query
     query = {"event_id": event_id}
@@ -264,7 +264,7 @@ async def get_buyer_tickets(
     """
     Get tickets purchased by a specific buyer.
     """
-    db = await Database.get_db()
+    db = await get_database()
     
     # Build query
     query = {"buyer_email": buyer_email}
@@ -297,7 +297,7 @@ async def update_ticket(
     """
     Update ticket
     """
-    db = await Database.get_db()
+    db = await get_database()
     
     # Check if ticket exists
     ticket = await db.tickets.find_one({"_id": ticket_id})
@@ -336,7 +336,7 @@ async def update_ticket_status(
     """
     Update ticket status.
     """
-    db = await Database.get_db()
+    db = await get_database()
     
     # Check if ticket exists
     ticket = await db.tickets.find_one({"_id": ticket_id})
@@ -378,7 +378,7 @@ async def update_ticket_payment(
     """
     Update ticket payment information.
     """
-    db = await Database.get_db()
+    db = await get_database()
     
     # Check if ticket exists
     ticket = await db.tickets.find_one({"_id": ticket_id})
@@ -420,7 +420,7 @@ async def update_ticket_qr_code(
     """
     Update ticket QR code URL.
     """
-    db = await Database.get_db()
+    db = await get_database()
     
     # Check if ticket exists
     ticket = await db.tickets.find_one({"_id": ticket_id})
@@ -452,6 +452,21 @@ async def update_ticket_qr_code(
     updated_ticket = await db.tickets.find_one({"_id": ticket_id})
     return Ticket(**updated_ticket)
 
+@router.get("/my-tickets", response_model=List[Ticket])
+async def get_my_tickets(
+    current_user: UserModel = Depends(get_current_active_user)
+) -> List[Ticket]:
+    """
+    Get all tickets for the current user
+    """
+    db = await get_database()
+    
+    # Get all tickets for the current user
+    tickets = await db.tickets.find({"user_id": str(current_user.id)}).to_list(length=None)
+    
+    # Convert to Ticket models
+    return [Ticket(**ticket) for ticket in tickets]
+
 @router.get("/", response_model=TicketResponse)
 async def get_tickets(
     event_id: Optional[str] = None,
@@ -463,7 +478,7 @@ async def get_tickets(
     """
     Get tickets with optional filtering
     """
-    db = await Database.get_db()
+    db = await get_database()
     
     # Build query
     query = {}
@@ -511,7 +526,7 @@ async def delete_ticket(
     """
     Delete ticket
     """
-    db = await Database.get_db()
+    db = await get_database()
     
     # Check if ticket exists
     ticket = await db.tickets.find_one({"_id": ticket_id})

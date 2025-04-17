@@ -1,6 +1,6 @@
 from enum import Enum
 from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from datetime import datetime
 from bson import ObjectId
 
@@ -14,6 +14,11 @@ class PaymentStatus(str, Enum):
     FAILED = "failed"
     CANCELLED = "cancelled"
 
+class TicketPurchase(BaseModel):
+    name: str
+    quantity: int
+    price: float
+
 class PaymentCreate(BaseModel):
     event_id: str
     amount: float
@@ -22,6 +27,7 @@ class PaymentCreate(BaseModel):
     phone: str
     callback_url: str
     payment_method: PaymentMethod = PaymentMethod.PAYSTACK
+    tickets: List[TicketPurchase]
 
 class PaymentUpdate(BaseModel):
     status: Optional[PaymentStatus] = None
@@ -35,6 +41,10 @@ class Payment(BaseModel):
     status: PaymentStatus
     payment_method: PaymentMethod
     payment_details: Dict[str, Any]
+    ticket_types: List[Dict[str, Any]]
+    name: str
+    email: str
+    phone: Optional[str]
     paystack_reference: Optional[str] = None
     paystack_authorization_url: Optional[str] = None
     created_at: datetime

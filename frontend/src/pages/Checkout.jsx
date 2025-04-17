@@ -68,7 +68,12 @@ const Checkout = () => {
         name: name,
         phone: phone,
         callback_url: `${window.location.origin}/checkout`,
-        payment_method: paymentMethod
+        payment_method: paymentMethod,
+        tickets: selectedTickets.map(ticket => ({
+          name: ticket.name,
+          quantity: ticket.quantity,
+          price: ticket.price
+        }))
       });
 
       if (response.data.paystack_authorization_url) {

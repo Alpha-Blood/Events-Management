@@ -15,6 +15,7 @@ import NotFound from '../pages/NotFound';
 import ProtectedRoute from '../components/ProtectedRoute';
 import OAuthCallback from '../pages/OAuthCallback';
 import PaymentSuccess from '../pages/PaymentSuccess';
+import MyTickets from '../pages/MyTickets';
 
 const AppRoutes = () => {
   return (
@@ -28,6 +29,7 @@ const AppRoutes = () => {
             <Checkout />
           </ProtectedRoute>
         } />
+        <Route path="my-tickets" element={<MyTickets />} />
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Register />} />
         <Route path="contact" element={<Contact />} />

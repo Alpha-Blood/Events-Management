@@ -269,7 +269,7 @@ async def facebook_callback(code: str, state: str = None):
             expires_delta=access_token_expires
         )
         
-        # Prepare redirect parameters
+        # Prepare redirect URL with token and user data
         params = {
             "access_token": access_token,
             "user": urllib.parse.quote(json.dumps(user))
@@ -277,12 +277,11 @@ async def facebook_callback(code: str, state: str = None):
         if state:
             params["from"] = state
         
-        # Redirect to frontend callback URL
         redirect_url = f"http://localhost:5173/auth/facebook/callback?{urllib.parse.urlencode(params)}"
         return RedirectResponse(redirect_url)
-    
+        
     except Exception as e:
-        print(f"Error in Facebook callback: {str(e)}")
+        print(f"Error in Facebook callback: {str(e)}")  # Add logging
         error_message = str(e)
         error_url = f"http://localhost:5173/login?error={urllib.parse.quote(error_message)}"
         return RedirectResponse(error_url)
