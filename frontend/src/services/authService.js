@@ -52,15 +52,13 @@ const authService = {
   },
 
   // Social authentication
-  async getGoogleAuthUrl() {
-    // The backend must use FRONTEND_GOOGLE_CALLBACK as the redirect_uri
-    const response = await axios.get(`${API_URL}/auth/google`);
+  async getGoogleAuthUrl(fromUrl = window.location.pathname) {
+    const response = await axios.get(`${API_URL}/auth/google?from_url=${encodeURIComponent(fromUrl)}`);
     return response.data.auth_url;
   },
 
-  async getFacebookAuthUrl() {
-    // The backend must use FRONTEND_FACEBOOK_CALLBACK as the redirect_uri
-    const response = await axios.get(`${API_URL}/auth/facebook`);
+  async getFacebookAuthUrl(fromUrl = window.location.pathname) {
+    const response = await axios.get(`${API_URL}/auth/facebook?from_url=${encodeURIComponent(fromUrl)}`);
     return response.data.auth_url;
   },
 

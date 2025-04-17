@@ -1,64 +1,87 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { CardIcon, MpesaIcon, PayPalIcon } from '../components/PaymentIcons';
-
-const PaymentMethods = {
-  CARD: 'card',
-  MPESA: 'mpesa',
-  PAYPAL: 'paypal'
-};
+import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
+import MpesaLogo from '../assets/mpesa-logo.png'; // make sure the path is correct
+import { FaCreditCard } from 'react-icons/fa'; // FontAwesome card icon
 
 const Checkout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { event, selectedTickets } = location.state || {};
-  const [paymentMethod, setPaymentMethod] = useState(PaymentMethods.CARD);
+  const { user } = useAuth();
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState(null);
+  const [email, setEmail] = useState(user?.email || '');
+  const [name, setName] = useState(user?.name || '');
+  const [phone, setPhone] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('paystack');
 
-  const [cardData, setCardData] = useState({
-    cardNumber: '',
-    cardName: '',
-    expiryDate: '',
-    cvv: ''
-  });
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const reference = urlParams.get('reference') || urlParams.get('trxref');
 
-  const [mpesaData, setMpesaData] = useState({
-    phoneNumber: ''
-  });
+    if (reference) {
+      verifyPayment(reference);
+    }
+  }, []);
 
-  const [paypalData, setPaypalData] = useState({
-    email: ''
-  });
-
-  const handleCardChange = (e) => {
-    const { name, value } = e.target;
-    setCardData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  const verifyPayment = async (reference) => {
+    try {
+      const verifyResponse = await api.post(`/payments/verify/${reference}`, {
+        payment_method: paymentMethod
+      });
+      if (verifyResponse.data.status === 'success') {
+        navigate('/payment-success', {
+          state: {
+            event,
+            selectedTickets,
+            paymentStatus: 'success'
+          }
+        });
+      } else {
+        navigate('/payment-failed', {
+          state: {
+            event,
+            selectedTickets,
+            paymentStatus: 'failed'
+          }
+        });
+      }
+    } catch (err) {
+      setError('Payment verification failed. Please contact support.');
+    }
   };
 
-  const handleMpesaChange = (e) => {
-    const { name, value } = e.target;
-    setMpesaData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handlePaypalChange = (e) => {
-    const { name, value } = e.target;
-    setPaypalData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Handle payment processing based on selected method
-    console.log('Payment submitted:', { paymentMethod });
-    // Navigate to success page after successful payment
-    navigate('/payment-success');
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      const total = selectedTickets.reduce((sum, ticket) => sum + (ticket.price * ticket.quantity), 0);
+      
+      const response = await api.post('/payments', {
+        event_id: event.id,
+        amount: total,
+        email: email,
+        name: name,
+        phone: phone,
+        callback_url: `${window.location.origin}/checkout`,
+        payment_method: paymentMethod
+      });
+
+      if (response.data.paystack_authorization_url) {
+        // Open Paystack payment in the same window
+        window.location.href = response.data.paystack_authorization_url;
+      } else {
+        setError('No payment URL received from server');
+        setIsProcessing(false);
+      }
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Payment processing failed. Please try again.');
+      setIsProcessing(false);
+    }
   };
 
   if (!event || !selectedTickets) {
@@ -84,13 +107,18 @@ const Checkout = () => {
     <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-900 mb-8 mt-12">Checkout</h1>
-        
+
+        {error && (
+          <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+            {error}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Order Summary - Left Section */}
+          {/* Left: Order Summary */}
           <div className="bg-white rounded-lg shadow-md p-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">Order Summary</h2>
-            
-            {/* Event Image and Details */}
+
             <div className="mb-6">
               <img
                 src={event.image}
@@ -101,8 +129,7 @@ const Checkout = () => {
               <p className="text-gray-600">{event.date}</p>
               <p className="text-gray-600">{event.venue}</p>
             </div>
-            
-            {/* Tickets Summary */}
+
             <div className="space-y-4">
               {selectedTickets.map((ticket, index) => (
                 <div key={index} className="flex justify-between items-center">
@@ -115,7 +142,6 @@ const Checkout = () => {
               ))}
             </div>
 
-            {/* Total */}
             <div className="border-t border-gray-200 mt-6 pt-6">
               <div className="flex justify-between items-center">
                 <span className="text-lg font-semibold text-gray-900">Total</span>
@@ -124,166 +150,69 @@ const Checkout = () => {
             </div>
           </div>
 
-          {/* Payment Information - Right Section */}
+          {/* Right: Payment Section */}
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">Payment Information</h2>
-            
-            {/* Payment Method Selector */}
-            <div className="grid grid-cols-3 gap-4 mb-6">
-              <button
-                onClick={() => setPaymentMethod(PaymentMethods.CARD)}
-                className={`p-4 text-center rounded-lg border flex flex-col items-center justify-center space-y-2 ${
-                  paymentMethod === PaymentMethods.CARD
-                    ? 'border-blue-500 bg-blue-50 text-blue-600'
-                    : 'border-gray-200 hover:border-blue-500'
-                }`}
-              >
-                <CardIcon />
-                <span>Card</span>
-              </button>
-              <button
-                onClick={() => setPaymentMethod(PaymentMethods.MPESA)}
-                className={`p-4 text-center rounded-lg border flex flex-col items-center justify-center space-y-2 ${
-                  paymentMethod === PaymentMethods.MPESA
-                    ? 'border-blue-500 bg-blue-50 text-blue-600'
-                    : 'border-gray-200 hover:border-blue-500'
-                }`}
-              >
-                <MpesaIcon />
-                <span>M-Pesa</span>
-              </button>
-              <button
-                onClick={() => setPaymentMethod(PaymentMethods.PAYPAL)}
-                className={`p-4 text-center rounded-lg border flex flex-col items-center justify-center space-y-2 ${
-                  paymentMethod === PaymentMethods.PAYPAL
-                    ? 'border-blue-500 bg-blue-50 text-blue-600'
-                    : 'border-gray-200 hover:border-blue-500'
-                }`}
-              >
-                <PayPalIcon />
-                <span>PayPal</span>
-              </button>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Bank & M-Pesa</h2>
+            <p className="text-sm text-gray-600 mb-6">You can pay using M-Pesa or your bank card, fill in the details below and click on the button to proceed with payment, a pop up will appear to select your payment method</p>
+
+            <div className="flex items-center space-x-4 mb-6">
+              <img src={MpesaLogo} alt="M-Pesa" className="h-10" />
+              <FaCreditCard className="text-3xl text-gray-700" />
             </div>
 
-            {/* Payment Forms */}
             <form onSubmit={handleSubmit} className="space-y-4">
-              {paymentMethod === PaymentMethods.CARD && (
-                <>
-                  <div>
-                    <label htmlFor="cardNumber" className="block text-sm font-medium text-gray-700 mb-1">
-                      Card Number
-                    </label>
-                    <input
-                      type="text"
-                      id="cardNumber"
-                      name="cardNumber"
-                      value={cardData.cardNumber}
-                      onChange={handleCardChange}
-                      className="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                      placeholder="1234 5678 9012 3456"
-                      required
-                    />
-                  </div>
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+                  placeholder="John Doe"
+                  required
+                />
+              </div>
 
-                  <div>
-                    <label htmlFor="cardName" className="block text-sm font-medium text-gray-700 mb-1">
-                      Name on Card
-                    </label>
-                    <input
-                      type="text"
-                      id="cardName"
-                      name="cardName"
-                      value={cardData.cardName}
-                      onChange={handleCardChange}
-                      className="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                      placeholder="John Doe"
-                      required
-                    />
-                  </div>
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+                  placeholder="your@email.com"
+                  required
+                />
+              </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label htmlFor="expiryDate" className="block text-sm font-medium text-gray-700 mb-1">
-                        Expiry Date
-                      </label>
-                      <input
-                        type="text"
-                        id="expiryDate"
-                        name="expiryDate"
-                        value={cardData.expiryDate}
-                        onChange={handleCardChange}
-                        className="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                        placeholder="MM/YY"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label htmlFor="cvv" className="block text-sm font-medium text-gray-700 mb-1">
-                        CVV
-                      </label>
-                      <input
-                        type="text"
-                        id="cvv"
-                        name="cvv"
-                        value={cardData.cvv}
-                        onChange={handleCardChange}
-                        className="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                        placeholder="123"
-                        required
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {paymentMethod === PaymentMethods.MPESA && (
-                <div>
-                  <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-1">
-                    M-Pesa Phone Number
-                  </label>
-                  <input
-                    type="tel"
-                    id="phoneNumber"
-                    name="phoneNumber"
-                    value={mpesaData.phoneNumber}
-                    onChange={handleMpesaChange}
-                    className="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                    placeholder="254712345678"
-                    required
-                  />
-                  <p className="mt-2 text-sm text-gray-500">
-                    You will receive an M-Pesa prompt on your phone to complete the payment
-                  </p>
-                </div>
-              )}
-
-              {paymentMethod === PaymentMethods.PAYPAL && (
-                <div>
-                  <label htmlFor="paypalEmail" className="block text-sm font-medium text-gray-700 mb-1">
-                    PayPal Email
-                  </label>
-                  <input
-                    type="email"
-                    id="paypalEmail"
-                    name="email"
-                    value={paypalData.email}
-                    onChange={handlePaypalChange}
-                    className="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                    placeholder="your@email.com"
-                    required
-                  />
-                  <p className="mt-2 text-sm text-gray-500">
-                    You will be redirected to PayPal to complete your payment
-                  </p>
-                </div>
-              )}
+              <div>
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  id="phone"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="mt-1 block w-full px-4 py-3 rounded-lg border border-gray-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+                  placeholder="2547XXXXXXXX"
+                  required
+                />
+                <p className="mt-1 text-sm text-gray-500">Format: 2547XXXXXXXX</p>
+              </div>
 
               <button
                 type="submit"
-                className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium"
+                disabled={isProcessing}
+                className="w-full mt-6 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 disabled:opacity-50"
               >
-                Pay KSH {total.toLocaleString()}
+                {isProcessing ? 'Processing...' : 'Proceed to Payment'}
               </button>
             </form>
           </div>

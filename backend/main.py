@@ -12,6 +12,7 @@ from app.core.config import settings
 from app.auth.routes import router as auth_router
 from app.events.routes import router as events_router
 from app.tickets.routes import router as tickets_router
+from app.payments.routes import router as payments_router
 
 # Routers (Import and add your routers here)
 # from routes import auth_routes, event_routes, ticket_routes, admin_routes
@@ -89,6 +90,10 @@ async def root():
 app.include_router(auth_router, prefix=settings.API_V1_STR)
 app.include_router(events_router, prefix=settings.API_V1_STR)
 app.include_router(tickets_router, prefix=settings.API_V1_STR)
+
+# Debug print for payment router
+logger.info(f"Including payment router with prefix: {settings.API_V1_STR}")
+app.include_router(payments_router, prefix=settings.API_V1_STR)
 
 if __name__ == "__main__":
     logger.info("Starting FastAPI server...")

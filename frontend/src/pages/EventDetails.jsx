@@ -77,7 +77,7 @@ const EventDetails = () => {
     const ticketsToBook = event.ticket_types
       .filter(ticket => selectedTickets[ticket.name] > 0)
       .map(ticket => ({
-        ticket_type_name: ticket.name,
+        name: ticket.name,
         quantity: selectedTickets[ticket.name],
         price: ticket.price,
         total: ticket.price * selectedTickets[ticket.name]
@@ -85,12 +85,14 @@ const EventDetails = () => {
 
     navigate('/checkout', {
       state: {
-        event_id: event.id,
-        event_title: event.title,
-        event_date: event.start_date,
-        event_venue: event.venue,
-        tickets: ticketsToBook,
-        total_amount: calculateTotal()
+        event: {
+          id: event.id,
+          title: event.title,
+          image: event.image_url,
+          date: event.start_date,
+          venue: event.venue
+        },
+        selectedTickets: ticketsToBook
       }
     });
   };

@@ -1,18 +1,21 @@
 import { useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import authService from '../services/authService';
 
 const OAuthCallback = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
+    const location = useLocation();
     const { login } = useAuth();
     const access_token = searchParams.get('access_token');
     const userParam = searchParams.get('user');
     const error = searchParams.get('error');
+    const from = searchParams.get('from');
 
     useEffect(() => {
         console.log('OAuthCallback mounted');
-        console.log('Params:', { access_token, userParam, error });
+        console.log('Params:', { access_token, userParam, error, from });
 
         if (error) {
             console.error('OAuth Error:', error);
@@ -37,13 +40,10 @@ const OAuthCallback = () => {
             // Update auth context
             login(user);
             
-            // Get and clear redirect URL
-            const redirectUrl = localStorage.getItem('redirectUrl') || '/';
-            localStorage.removeItem('redirectUrl');
-            
+            // Get redirect URL from authService
+            const redirectUrl = authService.getRedirectUrl();
             console.log('Redirecting to:', redirectUrl);
-            // Use window.location for immediate redirect
-            window.location.href = redirectUrl;
+            navigate(redirectUrl, { replace: true });
         } catch (e) {
             console.error('Error parsing user info:', e);
             navigate('/login', { state: { error: 'Failed to parse user information' }, replace: true });

@@ -23,7 +23,14 @@ export const AuthProvider = ({ children }) => {
   const login = (userData) => {
     setIsAuthenticated(true);
     if (userData) {
-      setUser(userData);
+      try {
+        // Handle both string and object userData
+        const parsedUserData = typeof userData === 'string' ? JSON.parse(userData) : userData;
+        setUser(parsedUserData);
+        localStorage.setItem('user', JSON.stringify(parsedUserData));
+      } catch (e) {
+        console.error('Error parsing user data:', e);
+      }
     }
   };
 

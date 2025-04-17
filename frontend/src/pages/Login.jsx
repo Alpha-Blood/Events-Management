@@ -20,7 +20,8 @@ const Login = () => {
     try {
       const response = await authService.login(email, password);
       login(); // Update auth state
-      navigate('/');
+      const redirectUrl = authService.getRedirectUrl();
+      navigate(redirectUrl);
     } catch (err) {
       setError(err.response?.data?.detail || 'Login failed');
     } finally {
@@ -30,9 +31,10 @@ const Login = () => {
 
   const handleSocialLogin = async (provider) => {
     try {
+      const currentPath = window.location.pathname;
       const authUrl = provider === 'google' 
-        ? await authService.getGoogleAuthUrl()
-        : await authService.getFacebookAuthUrl();
+        ? await authService.getGoogleAuthUrl(currentPath)
+        : await authService.getFacebookAuthUrl(currentPath);
       window.location.href = authUrl;
     } catch (err) {
       setError(err.response?.data?.detail || `${provider} login failed`);

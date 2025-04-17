@@ -14,6 +14,7 @@ import Privacy from '../pages/Privacy';
 import NotFound from '../pages/NotFound';
 import ProtectedRoute from '../components/ProtectedRoute';
 import OAuthCallback from '../pages/OAuthCallback';
+import PaymentSuccess from '../pages/PaymentSuccess';
 
 const AppRoutes = () => {
   return (
@@ -35,6 +36,7 @@ const AppRoutes = () => {
         <Route path="privacy" element={<Privacy />} />
         <Route path="auth/google/callback" element={<OAuthCallback />} />
         <Route path="auth/facebook/callback" element={<OAuthCallback />} />
+        <Route path="payment-success" element={<PaymentSuccess />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
