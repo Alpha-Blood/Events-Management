@@ -1,13 +1,12 @@
 import { Navigate, useLocation } from 'react-router-dom';
-import authService from '../services/authService';
+import { useAuth } from '../context/AuthContext';
 
 const ProtectedRoute = ({ children }) => {
     const location = useLocation();
-    const token = localStorage.getItem('token');
+    const { isAuthenticated } = useAuth();
 
-    if (!token) {
-        // Store the current URL before redirecting to login
-        authService.setRedirectUrl(location.pathname);
+    if (!isAuthenticated) {
+        // Redirect to login with the current location as state
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 

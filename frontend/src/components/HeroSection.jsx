@@ -26,7 +26,7 @@ const HeroSection = () => {
   };
 
   return (
-    <section className="relative mt-[80px] sm:mt-[80px] flex justify-center items-center px-4 sm:px-6">
+    <section className="relative mt-[20px] sm:mt-[10px] flex justify-center items-center px-4 sm:px-6">
       <div className="w-full md:w-[95%] rounded-2xl sm:rounded-3xl overflow-hidden relative shadow-lg">
         {/* Carousel Container */}
         <div className="relative h-[400px] sm:h-[450px] md:h-[500px]">

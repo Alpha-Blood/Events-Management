@@ -29,7 +29,11 @@ const AppRoutes = () => {
             <Checkout />
           </ProtectedRoute>
         } />
-        <Route path="my-tickets" element={<MyTickets />} />
+        <Route path="my-tickets" element={
+          <ProtectedRoute>
+            <MyTickets />
+          </ProtectedRoute>
+        } />
         <Route path="login" element={<Login />} />
         <Route path="register" element={<Register />} />
         <Route path="contact" element={<Contact />} />

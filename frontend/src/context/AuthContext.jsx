@@ -20,8 +20,11 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const login = (userData) => {
+  const login = (userData, token) => {
     setIsAuthenticated(true);
+    if (token) {
+      localStorage.setItem('token', token);
+    }
     if (userData) {
       try {
         // Handle both string and object userData

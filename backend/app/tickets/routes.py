@@ -517,7 +517,6 @@ async def get_tickets(
         page=page,
         size=size
     )
-
 @router.delete("/{ticket_id}")
 async def delete_ticket(
     ticket_id: str,
@@ -569,3 +568,4 @@ async def delete_ticket(
     )
     
     return {"message": "Ticket deleted successfully"}
+

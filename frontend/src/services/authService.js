@@ -95,6 +95,22 @@ const authService = {
     localStorage.removeItem('token');
   },
 
+  // Save current path for redirect
+  saveCurrentPathForRedirect() {
+    const currentPath = window.location.pathname;
+    // Don't save if already on login or register page
+    if (currentPath !== '/login' && currentPath !== '/register') {
+      localStorage.setItem('redirectPath', currentPath);
+    }
+  },
+
+  // Get saved redirect path
+  getSavedRedirectPath() {
+    const path = localStorage.getItem('redirectPath');
+    localStorage.removeItem('redirectPath');
+    return path || '/';
+  },
+
   // Store redirect URL in localStorage
   setRedirectUrl(url) {
     localStorage.setItem('redirectUrl', url);

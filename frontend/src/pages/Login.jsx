@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import authService from '../services/authService';
 import { FaGoogle, FaFacebook, FaEnvelope, FaLock } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
@@ -10,6 +10,7 @@ const Login = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
 
   const handleSubmit = async (e) => {
@@ -19,9 +20,11 @@ const Login = () => {
 
     try {
       const response = await authService.login(email, password);
-      login(); // Update auth state
-      const redirectUrl = authService.getRedirectUrl();
-      navigate(redirectUrl);
+      login(response.user, response.access_token);
+      
+      // Get redirect path from location state or saved path
+      const from = location.state?.from?.pathname || authService.getSavedRedirectPath();
+      navigate(from, { replace: true });
     } catch (err) {
       setError(err.response?.data?.detail || 'Login failed');
     } finally {
@@ -31,10 +34,15 @@ const Login = () => {
 
   const handleSocialLogin = async (provider) => {
     try {
-      const currentPath = window.location.pathname;
-      const authUrl = provider === 'google' 
-        ? await authService.getGoogleAuthUrl(currentPath)
-        : await authService.getFacebookAuthUrl(currentPath);
+      // Store original location in case of redirect
+      const redirectPath = location.state?.from?.pathname || location.pathname;
+      authService.setRedirectUrl(redirectPath);
+
+      const authUrl =
+        provider === 'google'
+          ? await authService.getGoogleAuthUrl(redirectPath)
+          : await authService.getFacebookAuthUrl(redirectPath);
+
       window.location.href = authUrl;
     } catch (err) {
       setError(err.response?.data?.detail || `${provider} login failed`);
