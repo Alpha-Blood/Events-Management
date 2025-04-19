@@ -22,9 +22,10 @@ const Navbar = () => {
   };
 
   const handleManualLogin = () => {
-    authService.saveCurrentPathForRedirect(location.pathname);
+    authService.setRedirectUrl(location.pathname);
     navigate('/login');
   };
+  
 
   return (
     <>
