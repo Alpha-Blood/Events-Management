@@ -83,19 +83,25 @@ const EventDetails = () => {
         total: ticket.price * selectedTickets[ticket.name]
       }));
 
+    const checkoutData = {
+      event: {
+        id: event.id,
+        title: event.title,
+        image: event.image_url,
+        date: event.start_date,
+        venue: event.venue
+      },
+      selectedTickets: ticketsToBook
+    };
+
+    // Save the checkout data
+    eventService.saveEventData(checkoutData);
+
     navigate('/checkout', {
-      state: {
-        event: {
-          id: event.id,
-          title: event.title,
-          image: event.image_url,
-          date: event.start_date,
-          venue: event.venue
-        },
-        selectedTickets: ticketsToBook
-      }
+      state: checkoutData
     });
   };
+  
 
   const handleShowMore = () => {
     navigate('/events');

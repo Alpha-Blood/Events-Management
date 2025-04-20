@@ -232,16 +232,13 @@ async def facebook_auth(from_url: str = None):
 
 @router.get("/facebook/callback")
 async def facebook_callback(code: str, state: str = None, db = Depends(get_database)):
-    """
-    Handle Facebook OAuth callback
-    """
+    """Handle Facebook OAuth callback"""
     try:
         user_info = await get_facebook_user_info(code)
         db = await Database.get_db()
         user = await db.users.find_one({"email": user_info["email"]})
         
         if not user:
-            # Create new user if they don't exist
             user_data = {
                 "email": user_info["email"],
                 "full_name": user_info["name"],
@@ -255,10 +252,8 @@ async def facebook_callback(code: str, state: str = None, db = Depends(get_datab
             user_data["_id"] = str(result.inserted_id)
             user = user_data
         else:
-            # Convert MongoDB document to dict and handle ObjectId
             user = dict(user)
             user["_id"] = str(user["_id"])
-            # Convert datetime fields to ISO format strings
             for field in ["created_at", "updated_at"]:
                 if field in user and isinstance(user[field], datetime):
                     user[field] = user[field].isoformat()
@@ -279,7 +274,7 @@ async def facebook_callback(code: str, state: str = None, db = Depends(get_datab
         redirect_url = f"{settings.FRONTEND_URL}/auth/facebook/callback?{urllib.parse.urlencode(params)}"
         return RedirectResponse(redirect_url)
     except Exception as e:
-        print(f"Error in Facebook callback: {str(e)}")  # Add logging
+        print(f"Error in Facebook callback: {str(e)}")
         error_message = str(e)
         error_url = f"{settings.FRONTEND_URL}/login?error={urllib.parse.quote(error_message)}"
         return RedirectResponse(error_url)

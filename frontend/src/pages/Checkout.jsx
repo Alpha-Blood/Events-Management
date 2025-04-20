@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import eventService from '../services/eventService';
 import MpesaLogo from '../assets/mpesa-logo.png'; // make sure the path is correct
 import { FaCreditCard } from 'react-icons/fa'; // FontAwesome card icon
 
 const Checkout = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { event, selectedTickets } = location.state || {};
   const { user } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);
@@ -16,6 +16,10 @@ const Checkout = () => {
   const [name, setName] = useState(user?.name || '');
   const [phone, setPhone] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('paystack');
+
+  // Get event data from location state or saved data
+  const savedData = eventService.getEventData();
+  const { event, selectedTickets } = location.state || savedData || {};
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -32,6 +36,9 @@ const Checkout = () => {
         payment_method: paymentMethod
       });
       if (verifyResponse.data.status === 'success') {
+        // Clear saved event data
+        eventService.clearEventData();
+        
         navigate('/payment-success', {
           state: {
             event,

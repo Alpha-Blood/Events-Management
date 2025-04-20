@@ -109,6 +109,19 @@ const eventService = {
       console.error('Error updating featured status:', error);
       throw new Error(error.response?.data?.detail || 'Failed to update featured status');
     }
+  },
+
+  saveEventData(data) {
+    localStorage.setItem('eventCheckoutData', JSON.stringify(data));
+  },
+
+  getEventData() {
+    const data = localStorage.getItem('eventCheckoutData');
+    return data ? JSON.parse(data) : null;
+  },
+
+  clearEventData() {
+    localStorage.removeItem('eventCheckoutData');
   }
 };
 
