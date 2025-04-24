@@ -22,9 +22,14 @@ class TwilioService:
             bool: True if message was sent successfully, False otherwise
         """
         try:
-            # Format the phone number if needed
+            # Format the phone number
             if not to_number.startswith('+'):
-                to_number = f'+{to_number}'
+                # Remove any non-digit characters
+                to_number = ''.join(filter(str.isdigit, to_number))
+                # Add country code if not present (assuming Kenya)
+                if not to_number.startswith('254'):
+                    to_number = '254' + to_number.lstrip('0')
+                to_number = '+' + to_number
             
             # Send the message
             message = self.client.messages.create(
@@ -43,24 +48,33 @@ class TwilioService:
                 detail="Failed to send SMS notification"
             )
 
-    async def send_ticket_confirmation(self, to_number: str, event_title: str, ticket_id: str) -> bool:
+    async def send_ticket_confirmation(
+        self,
+        to_number: str,
+        event_title: str,
+        ticket_id: str,
+        qr_code_url: str = None
+    ) -> bool:
         """
-        Send a ticket confirmation SMS
-        
-        Args:
-            to_number (str): The recipient's phone number
-            event_title (str): The title of the event
-            ticket_id (str): The ticket ID
+        Send a ticket confirmation SMS with QR code information
+        """
+        try:
+            # Create a shorter message
+            message = (
+                f"Ticket Confirmed: {event_title}\n"
+                f"ID: {ticket_id}\n"
+                "Check email for QR code"
+            )
             
-        Returns:
-            bool: True if message was sent successfully
-        """
-        message = (
-            f"Your ticket for {event_title} has been confirmed!\n"
-            f"Ticket ID: {ticket_id}\n"
-            f"Thank you for your purchase!"
-        )
-        return await self.send_sms(to_number, message)
+            # Only add QR code URL if it's short enough
+            if qr_code_url and len(message) + len(qr_code_url) < 1500:
+                message += f"\nQR: {qr_code_url}"
+            
+            return await self.send_sms(to_number, message)
+            
+        except Exception as e:
+            logger.error(f"Failed to send ticket confirmation SMS: {str(e)}")
+            return False
 
     async def send_payment_confirmation(self, to_number: str, event_title: str, amount: float) -> bool:
         """

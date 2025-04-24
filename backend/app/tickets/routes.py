@@ -279,10 +279,19 @@ async def get_buyer_tickets(
     # Get tickets with pagination
     skip = (page - 1) * size
     tickets = await db.tickets.find(query).skip(skip).limit(size).to_list(length=size)
-    tickets = [Ticket(**ticket) for ticket in tickets]
+    
+    # Format tickets before returning
+    formatted_tickets = []
+    for ticket in tickets:
+        # Convert ObjectId to string for id field
+        ticket["id"] = str(ticket.pop("_id"))
+        # Convert status to lowercase
+        if "status" in ticket:
+            ticket["status"] = ticket["status"].lower()
+        formatted_tickets.append(Ticket(**ticket))
     
     return TicketResponse(
-        tickets=tickets,
+        tickets=formatted_tickets,
         total=total,
         page=page,
         size=size

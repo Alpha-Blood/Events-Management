@@ -83,12 +83,23 @@ const Checkout = () => {
         }))
       });
 
-      if (response.data.paystack_authorization_url) {
-        // Open Paystack payment in the same window
-        window.location.href = response.data.paystack_authorization_url;
+      if (paymentMethod === 'paystack') {
+        // For card payments, redirect to Paystack payment page
+        if (response.data.paystack_authorization_url) {
+          window.location.href = response.data.paystack_authorization_url;
+        } else {
+          setError('No payment URL received from server');
+          setIsProcessing(false);
+        }
       } else {
-        setError('No payment URL received from server');
-        setIsProcessing(false);
+        // For mobile money payments, show success message and wait for payment confirmation
+        navigate('/payment-pending', {
+          state: {
+            event,
+            selectedTickets,
+            paymentReference: response.data.paystack_reference
+          }
+        });
       }
     } catch (err) {
       setError(err.response?.data?.detail || 'Payment processing failed. Please try again.');

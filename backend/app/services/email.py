@@ -5,6 +5,7 @@ from typing import Optional
 from app.core.config import settings
 from app.events.models import Event
 from app.tickets.models import TicketModel
+from datetime import datetime
 
 class EmailService:
     def __init__(self):
@@ -103,52 +104,76 @@ class EmailService:
 
     async def send_ticket_qr_code(
         self,
-        ticket: TicketModel,
-        event: Event,
+        ticket: dict,
+        event: dict,
         qr_code_url: str,
         recipient_email: str
     ) -> bool:
         """
-        Send ticket QR code email
+        Send ticket email with QR code
         """
-        subject = f"Your Ticket QR Code - {event.title}"
-        
-        # Text version
-        text_body = f"""
-        Your ticket QR code is ready!
-        
-        Event: {event.title}
-        Date: {event.start_date.strftime('%B %d, %Y')}
-        Venue: {event.venue}
-        
-        Please find your QR code below:
-        {qr_code_url}
-        
-        This QR code will be scanned at the event entrance.
-        Please keep it safe and ready to present.
-        """
-        
-        # HTML version
-        html_body = f"""
-        <html>
-            <body>
-                <h2>Your ticket QR code is ready!</h2>
-                <p>
-                    <strong>Event:</strong> {event.title}<br>
-                    <strong>Date:</strong> {event.start_date.strftime('%B %d, %Y')}<br>
-                    <strong>Venue:</strong> {event.venue}
-                </p>
-                <p>Please find your QR code below:</p>
-                <img src="{qr_code_url}" alt="Ticket QR Code" style="max-width: 200px;">
-                <p>
-                    This QR code will be scanned at the event entrance.<br>
-                    Please keep it safe and ready to present.
-                </p>
-            </body>
-        </html>
-        """
-        
-        return await self.send_email(recipient_email, subject, text_body, html_body)
+        try:
+            subject = f"Your Ticket for {event['title']}"
+            
+            # Format date and time
+            event_date = event.get('start_date', '')
+            if isinstance(event_date, str):
+                try:
+                    event_date = datetime.fromisoformat(event_date)
+                except:
+                    event_date = 'TBD'
+            
+            if isinstance(event_date, datetime):
+                formatted_date = event_date.strftime('%B %d, %Y')
+                formatted_time = event_date.strftime('%I:%M %p')
+            else:
+                formatted_date = 'TBD'
+                formatted_time = 'TBD'
+            
+            # Create HTML content with embedded QR code
+            html_content = f"""
+            <html>
+                <body>
+                    <h2>Thank you for your purchase!</h2>
+                    <p>Here is your ticket for {event['title']}</p>
+                    
+                    <div style="margin: 20px 0;">
+                        <h3>Ticket Details:</h3>
+                        <p>Event: {event['title']}</p>
+                        <p>Ticket Type: {ticket['ticket_type_name']}</p>
+                        <p>Quantity: {ticket['quantity']}</p>
+                        <p>Total Price: ${ticket['total_price']}</p>
+                    </div>
+                    
+                    <div style="margin: 20px 0;">
+                        <h3>QR Code:</h3>
+                        <p>Please present this QR code at the event entrance:</p>
+                        <img src="data:image/png;base64,{qr_code_url}" alt="Ticket QR Code" style="max-width: 200px;">
+                    </div>
+                    
+                    <div style="margin: 20px 0;">
+                        <h3>Event Details:</h3>
+                        <p>Date: {formatted_date}</p>
+                        <p>Time: {formatted_time}</p>
+                        <p>Location: {event.get('venue', 'TBD')}</p>
+                    </div>
+                    
+                    <p>If you have any questions, please contact us.</p>
+                </body>
+            </html>
+            """
+            
+            # Send email
+            return await self.send_email(
+                recipient_email=recipient_email,
+                subject=subject,
+                body="Please view this email in HTML format to see your ticket details and QR code.",
+                html_body=html_content
+            )
+            
+        except Exception as e:
+            print(f"Error sending ticket email: {str(e)}")
+            return False
 
     async def send_password_reset(
         self,

@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import api from '../services/api';
+import ticketsService from '../services/ticketsService';
 
 const MyTickets = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [size] = useState(10);
+  const [totalTickets, setTotalTickets] = useState(0);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -16,10 +19,17 @@ const MyTickets = () => {
       return;
     }
 
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
     const fetchTickets = async () => {
       try {
-        const response = await api.get('/tickets/my-tickets');
-        setTickets(response.data);
+        setLoading(true);
+        const response = await ticketsService.getBuyerTickets(user.email, page, size);
+        setTickets(response.tickets);
+        setTotalTickets(response.total);
       } catch (err) {
         setError('Failed to fetch tickets. Please try again later.');
         console.error('Error fetching tickets:', err);
@@ -29,7 +39,9 @@ const MyTickets = () => {
     };
 
     fetchTickets();
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, user, page, size]);
+
+  const totalPages = Math.ceil(totalTickets / size);
 
   if (loading) {
     return (
@@ -48,8 +60,8 @@ const MyTickets = () => {
     return (
       <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center text-red-600">
-            <p>{error}</p>
+          <div className="text-center">
+            <p className="text-red-500 text-lg">{error}</p>
           </div>
         </div>
       </div>
@@ -63,49 +75,46 @@ const MyTickets = () => {
         
         {tickets.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-lg text-gray-600">You haven't purchased any tickets yet.</p>
+            <p className="text-gray-500 text-lg">You haven't purchased any tickets yet.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {tickets.map((ticket) => (
-              <div key={ticket._id} className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="p-6">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-2">{ticket.event_title}</h2>
-                  <div className="space-y-2">
-                    <p className="text-gray-600">
-                      <span className="font-medium">Ticket Type:</span> {ticket.ticket_type_name}
-                    </p>
-                    <p className="text-gray-600">
-                      <span className="font-medium">Quantity:</span> {ticket.quantity}
-                    </p>
-                    <p className="text-gray-600">
-                      <span className="font-medium">Total Price:</span> ${ticket.total_price}
-                    </p>
-                    <p className="text-gray-600">
-                      <span className="font-medium">Status:</span>{' '}
-                      <span className={`px-2 py-1 rounded-full text-sm ${
-                        ticket.status === 'PAID' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {ticket.status}
-                      </span>
-                    </p>
-                    <p className="text-gray-600">
-                      <span className="font-medium">Purchase Date:</span>{' '}
-                      {new Date(ticket.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
+          <>
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {tickets.map((ticket) => (
+                <div key={ticket.id} className="bg-white rounded-lg shadow-md p-6">
+                  <h2 className="text-xl font-semibold mb-2">{ticket.event_name}</h2>
+                  <p className="text-gray-600 mb-2">Ticket ID: {ticket.id}</p>
+                  <p className="text-gray-600 mb-2">Status: {ticket.status}</p>
+                  <p className="text-gray-600 mb-2">Quantity: {ticket.quantity}</p>
+                  <p className="text-gray-600 mb-2">Total Price: ${ticket.total_price}</p>
                 </div>
-                <div className="bg-gray-50 px-6 py-4">
+              ))}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="mt-8 flex justify-center">
+                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
                   <button
-                    onClick={() => window.open(`/tickets/${ticket._id}/download`, '_blank')}
-                    className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
                   >
-                    Download Ticket
+                    Previous
                   </button>
-                </div>
+                  <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                    Page {page} of {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                    className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    Next
+                  </button>
+                </nav>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </div>
     </div>

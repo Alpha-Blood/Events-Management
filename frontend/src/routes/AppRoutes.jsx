@@ -15,6 +15,7 @@ import NotFound from '../pages/NotFound';
 import ProtectedRoute from '../components/ProtectedRoute';
 import OAuthCallback from '../pages/OAuthCallback';
 import PaymentSuccess from '../pages/PaymentSuccess';
+import PaymentPending from '../pages/PaymentPending';
 import MyTickets from '../pages/MyTickets';
 
 const AppRoutes = () => {
@@ -43,6 +44,7 @@ const AppRoutes = () => {
         <Route path="auth/google/callback" element={<OAuthCallback />} />
         <Route path="auth/facebook/callback" element={<OAuthCallback />} />
         <Route path="payment-success" element={<PaymentSuccess />} />
+        <Route path="payment-pending" element={<PaymentPending />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
