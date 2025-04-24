@@ -23,12 +23,14 @@ const MyTickets = () => {
     const fetchTickets = async () => {
       try {
         setLoading(true);
+        setError(null);
         const response = await ticketsService.getBuyerTickets(user.email, page, size);
+        console.log('Fetched tickets:', response.tickets); // Debug log
         setTickets(response.tickets);
         setTotalTickets(response.total);
       } catch (err) {
-        setError('Failed to fetch tickets');
         console.error('Error fetching tickets:', err);
+        setError(err.message || 'Failed to fetch tickets');
       } finally {
         setLoading(false);
       }
@@ -36,6 +38,24 @@ const MyTickets = () => {
 
     fetchTickets();
   }, [user, navigate, page, size]);
+
+  const formatDate = (dateString) => {
+    try {
+      return format(new Date(dateString), 'MMMM d, yyyy');
+    } catch (err) {
+      console.error('Error formatting date:', err);
+      return 'Date Not Available';
+    }
+  };
+
+  const formatTime = (dateString) => {
+    try {
+      return format(new Date(dateString), 'h:mm a');
+    } catch (err) {
+      console.error('Error formatting time:', err);
+      return 'Time Not Available';
+    }
+  };
 
   const totalPages = Math.ceil(totalTickets / size);
 
@@ -58,6 +78,12 @@ const MyTickets = () => {
         <div className="max-w-7xl mx-auto">
           <div className="text-center text-red-600">
             <p className="text-lg">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+            >
+              Try Again
+            </button>
           </div>
         </div>
       </div>
@@ -97,7 +123,7 @@ const MyTickets = () => {
                     </h2>
                     <p className="text-sm opacity-90">
                       {ticket.event?.start_date 
-                        ? format(new Date(ticket.event.start_date), 'MMMM d, yyyy')
+                        ? formatDate(ticket.event.start_date)
                         : 'Date Not Available'}
                     </p>
                   </div>
@@ -155,7 +181,7 @@ const MyTickets = () => {
                         <p className="text-gray-600">
                           <span className="font-medium">Time:</span>{' '}
                           {ticket.event?.start_date 
-                            ? format(new Date(ticket.event.start_date), 'h:mm a')
+                            ? formatTime(ticket.event.start_date)
                             : 'Time Not Available'}
                         </p>
                       </div>
@@ -165,7 +191,7 @@ const MyTickets = () => {
                     <div className="mt-6 flex justify-between items-center">
                       <button
                         onClick={() => ticket.event?.id && navigate(`/events/${ticket.event.id}`)}
-                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                        className={`text-blue-600 hover:text-blue-800 text-sm font-medium ${!ticket.event?.id && 'opacity-50 cursor-not-allowed'}`}
                         disabled={!ticket.event?.id}
                       >
                         View Event

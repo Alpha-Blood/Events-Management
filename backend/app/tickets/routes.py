@@ -280,22 +280,45 @@ async def get_buyer_tickets(
     skip = (page - 1) * size
     tickets = await db.tickets.find(query).skip(skip).limit(size).to_list(length=size)
     
-    # Format tickets before returning
+    # Format tickets and fetch event details
     formatted_tickets = []
     for ticket in tickets:
-        # Get event details
-        event = await db.events.find_one({"_id": ObjectId(ticket["event_id"])})
-        if event:
-            # Convert ObjectId to string for id field
-            event["id"] = str(event.pop("_id"))
-            # Add event details to ticket
-            ticket["event"] = event
-        
         # Convert ObjectId to string for id field
         ticket["id"] = str(ticket.pop("_id"))
-        # Convert status to lowercase
+        
+        # Get event details
+        try:
+            event = await db.events.find_one({"_id": ObjectId(ticket["event_id"])})
+            if event:
+                # Convert event ObjectId to string
+                event["id"] = str(event.pop("_id"))
+                
+                # Convert datetime fields in event to ISO format
+                for field in ['start_date', 'end_date', 'created_at', 'updated_at']:
+                    if field in event and isinstance(event[field], datetime):
+                        event[field] = event[field].isoformat()
+                
+                # Convert ticket types ObjectIds if present
+                if 'ticket_types' in event:
+                    for ticket_type in event['ticket_types']:
+                        if '_id' in ticket_type:
+                            ticket_type['id'] = str(ticket_type.pop('_id'))
+                
+                # Add event details to ticket
+                ticket["event"] = event
+        except Exception as e:
+            print(f"Error fetching event details: {str(e)}")
+            ticket["event"] = None
+        
+        # Convert status to lowercase if present
         if "status" in ticket:
             ticket["status"] = ticket["status"].lower()
+        
+        # Convert datetime fields in ticket to ISO format
+        for field in ['created_at', 'updated_at']:
+            if field in ticket and isinstance(ticket[field], datetime):
+                ticket[field] = ticket[field].isoformat()
+            
         formatted_tickets.append(Ticket(**ticket))
     
     return TicketResponse(
