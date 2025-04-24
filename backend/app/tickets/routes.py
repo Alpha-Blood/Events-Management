@@ -283,6 +283,14 @@ async def get_buyer_tickets(
     # Format tickets before returning
     formatted_tickets = []
     for ticket in tickets:
+        # Get event details
+        event = await db.events.find_one({"_id": ObjectId(ticket["event_id"])})
+        if event:
+            # Convert ObjectId to string for id field
+            event["id"] = str(event.pop("_id"))
+            # Add event details to ticket
+            ticket["event"] = event
+        
         # Convert ObjectId to string for id field
         ticket["id"] = str(ticket.pop("_id"))
         # Convert status to lowercase

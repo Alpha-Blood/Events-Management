@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel, Field, EmailStr, validator
 from enum import Enum
+from app.events.schemas import EventInDB
 
 class TicketStatus(str, Enum):
     PENDING = "pending"
@@ -11,7 +12,7 @@ class TicketStatus(str, Enum):
     REFUNDED = "refunded"
 
 class PaymentMethod(str, Enum):
-    CARD = "card"
+    PAYSTACK = "paystack"
     MPESA = "mpesa"
     PAYPAL = "paypal"
 
@@ -49,6 +50,14 @@ class TicketInDB(TicketBase):
     created_at: datetime
     updated_at: datetime
     qr_code_url: Optional[str] = None
+    event: Optional[EventInDB] = None
+
+    class Config:
+        json_encoders = {
+            datetime: lambda dt: dt.isoformat()
+        }
+        populate_by_name = True
+        arbitrary_types_allowed = True
 
 class Ticket(TicketInDB):
     pass

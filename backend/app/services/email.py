@@ -132,30 +132,66 @@ class EmailService:
             
             # Create HTML content with embedded QR code
             html_content = f"""
+            <!DOCTYPE html>
             <html>
+                <head>
+                    <style>
+                        body {{
+                            font-family: Arial, sans-serif;
+                            line-height: 1.6;
+                            color: #333;
+                            max-width: 600px;
+                            margin: 0 auto;
+                            padding: 20px;
+                        }}
+                        .ticket-details {{
+                            background-color: #f9f9f9;
+                            padding: 20px;
+                            border-radius: 5px;
+                            margin: 20px 0;
+                        }}
+                        .qr-code {{
+                            text-align: center;
+                            margin: 20px 0;
+                        }}
+                        .qr-code img {{
+                            max-width: 200px;
+                            height: auto;
+                            border: 1px solid #ddd;
+                            padding: 10px;
+                            background-color: white;
+                        }}
+                        .event-details {{
+                            background-color: #f0f8ff;
+                            padding: 20px;
+                            border-radius: 5px;
+                            margin: 20px 0;
+                        }}
+                    </style>
+                </head>
                 <body>
                     <h2>Thank you for your purchase!</h2>
                     <p>Here is your ticket for {event['title']}</p>
                     
-                    <div style="margin: 20px 0;">
+                    <div class="ticket-details">
                         <h3>Ticket Details:</h3>
-                        <p>Event: {event['title']}</p>
-                        <p>Ticket Type: {ticket['ticket_type_name']}</p>
-                        <p>Quantity: {ticket['quantity']}</p>
-                        <p>Total Price: ${ticket['total_price']}</p>
+                        <p><strong>Event:</strong> {event['title']}</p>
+                        <p><strong>Ticket Type:</strong> {ticket['ticket_type_name']}</p>
+                        <p><strong>Quantity:</strong> {ticket['quantity']}</p>
+                        <p><strong>Total Price:</strong> ${ticket['total_price']}</p>
                     </div>
                     
-                    <div style="margin: 20px 0;">
-                        <h3>QR Code:</h3>
+                    <div class="qr-code">
+                        <h3>Your QR Code</h3>
                         <p>Please present this QR code at the event entrance:</p>
-                        <img src="data:image/png;base64,{qr_code_url}" alt="Ticket QR Code" style="max-width: 200px;">
+                        <img src="data:image/png;base64,{qr_code_url}" alt="Ticket QR Code">
                     </div>
                     
-                    <div style="margin: 20px 0;">
+                    <div class="event-details">
                         <h3>Event Details:</h3>
-                        <p>Date: {formatted_date}</p>
-                        <p>Time: {formatted_time}</p>
-                        <p>Location: {event.get('venue', 'TBD')}</p>
+                        <p><strong>Date:</strong> {formatted_date}</p>
+                        <p><strong>Time:</strong> {formatted_time}</p>
+                        <p><strong>Location:</strong> {event.get('venue', 'TBD')}</p>
                     </div>
                     
                     <p>If you have any questions, please contact us.</p>
